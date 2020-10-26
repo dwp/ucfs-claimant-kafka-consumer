@@ -1,6 +1,6 @@
-# dataworks-repo-template-docker
+# ucfs-claimant-kafka-consumer
 
-## Description
+## UCFS Claimant Kafka Consumer
 
 This repo contains Makefile, and Dockerfile to fit the standard pattern.
 This repo is a base to create new Docker image repos, adding the githooks submodule, making the repo ready for use.

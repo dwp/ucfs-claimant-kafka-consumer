@@ -1,31 +1,31 @@
 jobs:
-  - name: dataworks-repo-template-docker-pr
+  - name: ucfs-claimant-kafka-consumer-pr
     plan:
-      - get: dataworks-repo-template-docker-pr
+      - get: ucfs-claimant-kafka-consumer-pr
         trigger: true
         version: every
-      - put: dataworks-repo-template-docker-pr
+      - put: ucfs-claimant-kafka-consumer-pr
         params:
-          path: dataworks-repo-template-docker-pr
+          path: ucfs-claimant-kafka-consumer-pr
           status: pending
         input_mapping:
-          dataworks-repo-template-docker: dataworks-repo-template-docker-pr
+          ucfs-claimant-kafka-consumer: ucfs-claimant-kafka-consumer-pr
       - .: (( inject meta.plan.terraform-bootstrap ))
         input_mapping:
-          dataworks-repo-template-docker: dataworks-repo-template-docker-pr
+          ucfs-claimant-kafka-consumer: ucfs-claimant-kafka-consumer-pr
       - .: (( inject meta.plan.terraform-plan ))
         input_mapping:
-          dataworks-repo-template-docker: dataworks-repo-template-docker-pr
+          ucfs-claimant-kafka-consumer: ucfs-claimant-kafka-consumer-pr
         params:
           TF_WORKSPACE: "management-dev"
           DETAILED_EXITCODE: ""
         on_failure:
-          put: dataworks-repo-template-docker-pr
+          put: ucfs-claimant-kafka-consumer-pr
           params:
-            path: dataworks-repo-template-docker-pr
+            path: ucfs-claimant-kafka-consumer-pr
             status: failure
         on_success:
-          put: dataworks-repo-template-docker-pr
+          put: ucfs-claimant-kafka-consumer-pr
           params:
-            path: dataworks-repo-template-docker-pr
+            path: ucfs-claimant-kafka-consumer-pr
             status: success

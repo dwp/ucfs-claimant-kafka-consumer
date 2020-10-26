@@ -5,8 +5,8 @@ groups:
       - management
   - name: pull-request
     jobs:
-      - dataworks-repo-template-docker-pr
+      - ucfs-claimant-kafka-consumer-pr
   - name: mirror
     jobs:
-      - mirror-dwpdigital-dataworks-repo-template-docker-dev
-      - mirror-dwpdigital-dataworks-repo-template-docker
+      - mirror-dwpdigital-ucfs-claimant-kafka-consumer-dev
+      - mirror-dwpdigital-ucfs-claimant-kafka-consumer

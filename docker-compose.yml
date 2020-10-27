@@ -32,7 +32,3 @@ services:
       - kafka
     environment:
       KAFKA_INSECURE: "true"
-
-
-
-

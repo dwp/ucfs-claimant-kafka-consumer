@@ -25,19 +25,19 @@ git-hooks: ## Set up hooks in .githooks
 	@git submodule update --init .githooks ; \
 	git config core.hooksPath .githooks \
 
+.PHONY: services
+services: ## Bring up UCKC in Docker with supporting services
+	docker-compose up -d zookeeper kafka uckc
 
-.PHONY: terraform-init
-terraform-init: ## Run `terraform init` from repo root
-	terraform init
+.PHONY: up
+up: ## Bring up UCKC in Docker with supporting services
+	docker-compose up --build -d
 
-.PHONY: terraform-plan
-terraform-plan: ## Run `terraform plan` from repo root
-	terraform plan
+.PHONY: down
+down: ## Bring down the UCKC Docker container and support services
+	docker-compose down
 
-.PHONY: terraform-apply
-terraform-apply: ## Run `terraform apply` from repo root
-	terraform apply
-
-.PHONY: terraform-workspace-new
-terraform-workspace-new: ## Creates new Terraform workspace with Concourse remote execution. Run `terraform-workspace-new workspace=<workspace_name>`
-	fly -t aws-concourse execute --config create-workspace.yml --input repo=. -v workspace="$(workspace)"
+.PHONY: destroy
+destroy: down ## Bring down the UCKC Docker container and services then delete all volumes
+	docker network prune -f
+	docker volume prune -f

@@ -1,15 +1,41 @@
 # UCFS Claimant Kafka Consumer
 
-Currently this is just a container that has ACM PCA tool installed.
+Subscribes to the configured topics, logs the records on the console, discards
+the records.
 
-### Makefile
+## Makefile
 
-The Makefile wraps some of the docker-compose commands to give a more unified basic set of operations. These can be checked by running:   
-`make help`
+The Makefile wraps some of the docker-compose commands to give a more unified
+basic set of operations. These can be checked by running `make help`
 
-### Configuration
+To bring up the app and run the integration tests run `make tests`.
 
-#### SSL Mutual Authentication (CERTGEN mode)
+## Configuration
+
+### Application configuration
+
+The application can be configured with spring properties (specified on the
+command line or in an application properties file) or with environment
+variables or a mixture of the two.
+
+| Spring property              | Environment variable            | Purpose |
+|------------------------------|---------------------------------|---------|
+| kafka.bootstrapServers       | KAFKA_BOOTSTRAP_SERVERS         | kafka server hosts and ports |
+| kafka.consumerGroup          | KAFKA_CONSUMER_GROUP            | The consumer group to join |
+| kafka.fetchMaxBytes          | KAFKA_FETCH_MAX_BYTES           | The max volume of data to get on each poll loop |
+| kafka.keyPassword            | KAFKA_KEY_PASSWORD              | Private key password |
+| kafka.keystore               | KAFKA_KEYSTORE                  | Path to keystore containing app certificates |
+| kafka.keystorePassword       | KAFKA_KEYSTORE_PASSWORD         | Keystore password |
+| kafka.maxPartitionFetchBytes | KAFKA_MAX_PARTITION_FETCH_BYTES | The max volume of data in an assigned partition that can be fetched before the poll returns |
+| kafka.maxPollIntervalMs      | KAFKA_MAX_POLL_INTERVAL_MS      | How long to wait inbetween polls before consumer is dropped from the group |
+| kafka.maxPollRecords         | KAFKA_MAX_POLL_RECORDS          | How many records to collect on each poll before returning |
+| kafka.pollDurationSeconds    | KAFKA_POLL_DURATION_SECONDS     | How long to poll before returning |
+| kafka.topicRegex             | KAFKA_TOPIC_REGEX               | Topics matching this regex will be subscribed to |
+| kafka.truststore             | KAFKA_TRUSTSTORE                | Path to keystore containing trusted certificates |
+| kafka.truststorePassword     | KAFKA_TRUSTSTORE_PASSWORD       | Truststore password |
+| kafka.useSsl                 | KAFKA_USE_SSL                   | Whether to enable a mutually authenticated connection |
+
+### SSL Mutual Authentication (CERTGEN mode)
 
 By default the SSL is enabled but has no defaults. These must either be
 configured in full or disabled entirely via `K2HB_KAFKA_INSECURE=FALSE`
@@ -51,9 +77,9 @@ defaulted in the `entrypoint.sh` script.
     Comma delimited list of aliases for the certificate
 * **CERTGEN_LOG_LEVEL**
     The log level of the certificate generator (`CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`)
-    
 
-#### SSL Mutual Authentication (RETRIEVE mode)
+
+### SSL Mutual Authentication (RETRIEVE mode)
 
 By default the SSL is enabled but has no defaults. These must either be
 configured in full or disabled entirely via `K2HB_KAFKA_INSECURE=FALSE`

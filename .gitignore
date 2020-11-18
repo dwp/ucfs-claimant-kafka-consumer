@@ -11,3 +11,7 @@ gradle/
 gradlew
 gradlew.bat
 venv/
+*.jks
+*.crt
+*.pem
+*.p12

@@ -1,4 +1,14 @@
-FROM alpine:latest
+FROM gradle:latest as build
+
+RUN mkdir -p /build
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
+COPY src/ ./src
+RUN gradle build
+RUN cp build/libs/ucfs-claimant-kafka-consumer-*.jar /build/ucfs-claimant-kafka-consumer.jar
+RUN ls -la /build/
+
+FROM openjdk:14-alpine
 
 ARG http_proxy_host=""
 ARG http_proxy_port=""
@@ -34,15 +44,14 @@ RUN echo "===> Installing Dependencies ..." \
 ENV USER_NAME=uckc
 ENV GROUP_NAME=uckc
 
-# Create group and user to execute task
-RUN addgroup ${GROUP_NAME}
-RUN adduser --system --ingroup ${GROUP_NAME} ${USER_NAME}
+RUN mkdir /ucfs-claimant-kafka-consumer
+WORKDIR /ucfs-claimant-kafka-consumer
 
+COPY --from=build /build/ucfs-claimant-kafka-consumer.jar .
+RUN addgroup $GROUP_NAME
+RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 COPY ./entrypoint.sh /
-#RUN chmod +x /entrypoint.sh
-#RUN chown ${USER_NAME}:${GROUP_NAME} . -R
-
-#USER $USER_NAME
+RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
+USER $USER_NAME
+RUN pwd && ls
 ENTRYPOINT ["/entrypoint.sh"]
-
-CMD ["whoami"]

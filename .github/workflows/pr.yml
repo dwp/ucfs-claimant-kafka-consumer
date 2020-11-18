@@ -1,4 +1,4 @@
-name: High vulns Snyk PR scan
+name: Tests
 
 on: pull_request
 
@@ -19,3 +19,5 @@ jobs:
         with:
           image: ${{ env.IMAGE_NAME }}
           args: --file=Dockerfile --policy-path=./.snyk --severity-threshold=high --exclude-base-image-vulns --org=dwp-dataworks
+      - name: build and test
+        run: make tests

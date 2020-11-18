@@ -1,5 +1,4 @@
----
-version: "2.2"
+version: "3.3"
 
 services:
   zookeeper:
@@ -22,13 +21,20 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  uckc:
-    image: uckc:latest
+  ucfs-claimant-kafka-consumer:
+    image: ucfs-claimant-kafka-consumer:latest
     build: ./
-    container_name: uckc
-    ports:
-      - "5005:5005"
+    container_name: ucfs-claimant-kafka-consumer
     depends_on:
       - kafka
     environment:
       KAFKA_INSECURE: "true"
+      KAFKA_TOPIC_REGEX: db\.\w+\.\w+
+    command: ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
+
+  ucfs-claimant-kafka-consumer-tests:
+    image: ucfs-claimant-kafka-consumer-tests:latest
+    build: ./containers/tests
+    container_name: ucfs-claimant-kafka-consumer-tests
+    depends_on:
+      - ucfs-claimant-kafka-consumer

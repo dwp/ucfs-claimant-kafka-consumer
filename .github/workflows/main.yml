@@ -12,6 +12,13 @@ env:
   IMAGE_NAME: dwpdigital/ucfs-claimant-kafka-consumer
 
 jobs:
+  build-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Integration tests
+        run: make tests
+
   get-publish-version:
     runs-on: ubuntu-latest
     outputs:
@@ -44,12 +51,12 @@ jobs:
 
   publish-docker:
     runs-on: ubuntu-latest
-    needs: get-publish-version
+    needs: [get-publish-version, build-app]
     steps:
       - uses: actions/checkout@master
       - name: Get release version
         id: get_version
-        run: echo ::set-env name=RELEASE_VERSION::$(echo ${GITHUB_REF:10})
+        run: echo RELEASE_VERSION=$(echo ${GITHUB_REF:10}) >> $GITHUB_ENV
       - name: Publish to DockerHub
         uses: elgohr/Publish-Docker-Github-Action@master
         with:

@@ -1,0 +1,5 @@
+behave==1.2.6
+kafka-python==2.0.2
+parse==1.18.0
+parse-type==0.5.2
+six==1.15.0

@@ -6,3 +6,8 @@
 out/
 .gitsecret/keys/random_seed
 !*.secret
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+venv/

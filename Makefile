@@ -26,18 +26,27 @@ git-hooks: ## Set up hooks in .githooks
 	git config core.hooksPath .githooks \
 
 .PHONY: services
-services: ## Bring up UCKC in Docker with supporting services
-	docker-compose up -d zookeeper kafka uckc
+services: ## Bring up zookeeper, kafka
+	docker-compose up -d zookeeper kafka
 
 .PHONY: up
-up: ## Bring up UCKC in Docker with supporting services
-	docker-compose up --build -d
+up: services ## Bring up the consumer in Docker with supporting services
+	docker-compose up --build -d ucfs-claimant-kafka-consumer
+
+tests: up ## Run the integration tests
+	docker-compose up ucfs-claimant-kafka-consumer-tests
 
 .PHONY: down
-down: ## Bring down the UCKC Docker container and support services
+down: ## Bring down all containers
 	docker-compose down
 
 .PHONY: destroy
-destroy: down ## Bring down the UCKC Docker container and services then delete all volumes
+destroy: down ## Bring down the containers and services then delete all volumes, networks
 	docker network prune -f
 	docker volume prune -f
+
+clear-queue: ## Clear the integration test queue.
+	docker exec -it kafka kafka-topics --delete --topic db.database.collection  --zookeeper zookeeper:2181
+
+list-queues: ## List the queues on the local broker.
+	docker exec -it kafka kafka-topics --list --zookeeper zookeeper:2181

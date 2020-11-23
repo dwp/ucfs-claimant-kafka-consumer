@@ -39,6 +39,8 @@ then
             --private-key-password "${KAFKA_PRIVATE_KEY_PASSWORD}" \
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
+            --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
+            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}" >> /var/log/acm-cert-retriever.log 2>&1 \
             --region "${AWS_REGION}"
 
         echo "Cert generation result is $? for ${HOSTNAME}"
@@ -56,6 +58,8 @@ then
             --private-key-password "${KAFKA_PRIVATE_KEY_PASSWORD}" \
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
+            --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
+            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}" >> /var/log/acm-cert-retriever.log 2>&1 \
             --region "${AWS_REGION}"
 
         echo "Cert retrieve result is $? for ${RETRIEVER_ACM_CERT_ARN}"

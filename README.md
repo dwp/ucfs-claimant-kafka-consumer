@@ -82,11 +82,11 @@ defaulted in the `entrypoint.sh` script.
 ### SSL Mutual Authentication (RETRIEVE mode)
 
 By default the SSL is enabled but has no defaults. These must either be
-configured in full or disabled entirely via `K2HB_KAFKA_INSECURE=FALSE`
-and `K2HB_KAFKA_CERT_MODE=RETRIEVE`.
+configured in full or disabled entirely via `KAFKA_INSECURE=FALSE`
+and `KAFKA_CERT_MODE=RETRIEVE`.
 
 For an authoritative full list of arguments see the tool help; Arguments not listed here are
-defaulted in the `entrypoint.sh` script.
+defaulted in the `entrypoint.sh` script. These env vars will be overwritten by flags given in `entrypoint.sh`.
 
 * **RETRIEVER_ACM_CERT_ARN**
     ARN in AWS ACM to use to fetch the required cert, cert chain, and key
@@ -94,10 +94,12 @@ defaulted in the `entrypoint.sh` script.
     Whether or not to add the downloaded cert chain from the ARN to the trust store
     Allowed missing, `true`, `false`, `yes`, `no`, `1` or `0`
     If missing defaults to false
-* **RETRIEVE_TRUSTSTORE_CERTS**
+* **RETRIEVER_TRUSTSTORE_CERTS**
     Comma delimited list of S3 URIs pointing to certificates to be included in the trust store
-* **RETRIEVE_TRUSTSTORE_ALIASES**
+* **RETRIEVER_TRUSTSTORE_ALIASES**
     Comma delimited list of aliases for the certificate
+* **RETRIEVER_PRIVATE_KEY_ALIAS**
+    Name of application
 * **RETRIEVE_LOG_LEVEL**
     The log level of the certificate generator (`CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`)
 

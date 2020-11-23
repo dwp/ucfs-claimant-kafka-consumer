@@ -39,6 +39,7 @@ then
             --private-key-password "${KAFKA_PRIVATE_KEY_PASSWORD}" \
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}"
+            --region "${AWS_REGION}"
 
         echo "Cert generation result is $? for ${HOSTNAME}"
 

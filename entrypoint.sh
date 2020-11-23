@@ -56,6 +56,7 @@ then
             --private-key-password "${KAFKA_PRIVATE_KEY_PASSWORD}" \
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}"
+            --region "${AWS_REGION}"
 
         echo "Cert retrieve result is $? for ${RETRIEVER_ACM_CERT_ARN}"
 

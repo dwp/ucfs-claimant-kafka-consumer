@@ -94,9 +94,9 @@ defaulted in the `entrypoint.sh` script. These env vars will be overwritten by f
     Whether or not to add the downloaded cert chain from the ARN to the trust store
     Allowed missing, `true`, `false`, `yes`, `no`, `1` or `0`
     If missing defaults to false
-* **RETRIEVE_TRUSTSTORE_CERTS**
+* **RETRIEVER_TRUSTSTORE_CERTS**
     Comma delimited list of S3 URIs pointing to certificates to be included in the trust store
-* **RETRIEVE_TRUSTSTORE_ALIASES**
+* **RETRIEVER_TRUSTSTORE_ALIASES**
     Comma delimited list of aliases for the certificate
 * **RETRIEVER_PRIVATE_KEY_ALIAS**
     Name of application

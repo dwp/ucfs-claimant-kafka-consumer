@@ -6,11 +6,11 @@ set -e
 
 if [ "${INTERNET_PROXY}" ]; then
     export http_proxy="http://${INTERNET_PROXY}:3128"
-    export HTTP_PROXY="http://${INTERNET_PROXY}:3128"
-    export https_proxy="http://${INTERNET_PROXY}:3128"
-    export HTTPS_PROXY="http://${INTERNET_PROXY}:3128"
-    export no_proxy=169.254.169.254,.s3.eu-west-2.amazonaws.com,s3.eu-west-2.amazonaws.com
-    export NO_PROXY=169.254.169.254,.s3.eu-west-2.amazonaws.com,s3.eu-west-2.amazonaws.com
+    export HTTP_PROXY="$http_proxy"
+    export https_proxy="$http_proxy"
+    export HTTPS_PROXY="$https_proxy"
+    export no_proxy="${NON_PROXIED_ENDPOINTS}"
+    export NO_PROXY="$no_proxy"
     echo "Using proxy ${INTERNET_PROXY}"
 fi
 

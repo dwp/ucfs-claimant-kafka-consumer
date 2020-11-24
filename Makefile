@@ -59,12 +59,17 @@ build: ## Build the container
 up: build services ## Bring up the consumer in Docker with supporting services
 	docker-compose up --build -d ucfs-claimant-kafka-consumer
 
-tests: up ## Run the integration tests
+build-tests:
+	docker-compose build ucfs-claimant-kafka-consumer-tests
+
+tests: up ## Run the integration tests without rebuilding the tests
 	docker-compose up ucfs-claimant-kafka-consumer-tests
 
-integration-all: certificates up tests ## Run the integration tests
+integration-all-github: certificates up tests ## Run the integration tests
 
-integration-all-with-reset: destroy integration-all ## Run the integration tests on a fresh stack
+integration-all-local: delete-topics integration-all-github ## Run the integration tests with fresh topics
+
+integration-all-with-reset: destroy certificates build-tests up tests ## Run the integration tests on a fresh stack
 
 down: ## Bring down all containers
 	docker-compose down

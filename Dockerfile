@@ -24,7 +24,7 @@ RUN echo "ENV http: ${http_proxy}" \
     && echo "ENV HTTPS: ${HTTPS_PROXY}" \
     && echo "ARG full: ${http_proxy_full}"
 
-ENV acm_cert_helper_version 0.32.0
+ENV acm_cert_helper_version="0.32.0"
 RUN echo "===> Installing Dependencies ..." \
     && echo "===> Updating base packages ..." \
     && apk update \
@@ -36,6 +36,8 @@ RUN echo "===> Installing Dependencies ..." \
     && pip3 install --upgrade pip setuptools \
     && pip3 install https://github.com/dwp/acm-pca-cert-generator/releases/download/${acm_cert_helper_version}/acm_cert_helper-${acm_cert_helper_version}.tar.gz \
     && echo "==Dependencies done=="
+
+RUN which acm-cert-retriever
 
 # Set user to run the process as in the docker contianer
 ENV USER_NAME=uckc

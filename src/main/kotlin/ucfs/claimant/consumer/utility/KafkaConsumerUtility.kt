@@ -38,45 +38,4 @@ object KafkaConsumerUtility {
                     .filter(inclusionRegex::matches)
 
     private val logger = DataworksLogger.getLogger(KafkaConsumerUtility::class)
-
-//    @ExperimentalTime
-//    tailrec suspend infix fun <K, V> KafkaConsumer<K, V>.subscribe(includesRegex: Regex) {
-//
-//        val currentSubscription = subscription()
-//        println("CURRENT: $currentSubscription")
-//        val topics = includedTopics(includesRegex)
-//        println("TOPICS: $topics")
-//
-//        if (topics.toSet() != currentSubscription && topics.isNotEmpty()) {
-//            topics.minus(currentSubscription).forEach {
-//                logger.info("New topic found", "topic" to it)
-//            }
-//            subscribe(topics)
-//            return
-//        }
-//
-//        if (currentSubscription.isNotEmpty()) {
-//            return
-//        }
-//
-//        logger.info("No topics and no current subscription, trying again")
-//        delay(5.seconds)
-//        subscribe(includesRegex)
-//    }
-//
-//    private fun <K, V> KafkaConsumer<K, V>.includedTopics(inclusionRegex: Regex): List<String> {
-//        try {
-//            println("WOOOOOO $this")
-//            val wtf = listTopics()
-//            println("WTF $wtf")
-//            return wtf
-//                    .map(Map.Entry<String, List<PartitionInfo>>::key)
-//                    .filter(inclusionRegex::matches)
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//            throw e
-//        }
-//    }
-//
-//
 }

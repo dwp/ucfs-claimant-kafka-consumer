@@ -7,7 +7,7 @@ import requests
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-from behave import *
+from behave import given, then
 from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 
 
@@ -23,7 +23,7 @@ def step_impl(context):
 @given("{count} {state} messages have been posted to {topic}")
 def step_impl(context, count, state, topic):
     data_key = context.dks["plaintextDataKey"]
-    producer = KafkaProducer(bootstrap_servers="kafka:9092")
+    producer = KafkaProducer(bootstrap_servers=bootstrap_server())
 
     for i in range(int(count)):
         (initialisation_vector, encrypted_db_object) = encrypt(data_key, json.dumps({"data": f"data {i}"}))
@@ -52,7 +52,7 @@ def step_impl(context, count, state, topic):
 
 @then("the {topic} offset will be committed at {offset}")
 def step_impl(context, topic, offset):
-    consumer = KafkaConsumer(bootstrap_servers="kafka:9092", group_id="ucfs-claimant-consumers",
+    consumer = KafkaConsumer(bootstrap_servers=bootstrap_server(), group_id="ucfs-claimant-consumers",
                              enable_auto_commit=False)
     topic_partition = TopicPartition(topic=topic, partition=0)
     assert_committed_offset(consumer, topic_partition, int(offset))
@@ -128,10 +128,13 @@ def encrypt(key, plaintext):
 
 
 def subscribed_consumer(topic):
-    consumer = KafkaConsumer(auto_offset_reset='earliest', bootstrap_servers="kafka:9092", group_id="integration-tests")
+    consumer = KafkaConsumer(auto_offset_reset='earliest', bootstrap_servers=bootstrap_server(), group_id="integration-tests")
     print(f"Subscribing to {topic}")
     consumer.subscribe([topic, ])
     consumer.poll()
     consumer.seek_to_beginning()
     return consumer
 
+
+def bootstrap_server():
+    return "kafka:9092"

@@ -55,6 +55,7 @@ then
         echo "Retrieving cert from ${RETRIEVER_ACM_CERT_ARN}"
 
         acm-cert-retriever \
+            --region "${AWS_REGION}" \
             --acm-key-passphrase "${RETRIEVER_ACM_KEY_PASSPHRASE}" \
             --keystore-path "${KAFKA_KEYSTORE_PATH}" \
             --keystore-password "${KAFKA_KEYSTORE_PASSWORD}" \
@@ -62,10 +63,15 @@ then
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
             --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}" >> /var/log/acm-cert-retriever.log 2>&1 \
-            --region "${AWS_REGION}"
+            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}" >> /var/log/acm-cert-retriever.log 2>&1
 
         echo "Cert retrieve result is $? for ${RETRIEVER_ACM_CERT_ARN}"
+
+        export SECURITY_KEY_PASSWORD="${KAFKA_PRIVATE_KEY_PASSWORD}"
+        export SECURITY_KEYSTORE="${KAFKA_KEYSTORE_PATH}"
+        export SECURITY_KEYSTORE_PASSWORD="${KAFKA_KEYSTORE_PASSWORD}"
+        export SECURITY_TRUSTSTORE="${KAFKA_TRUSTSTORE_PATH}"
+        export SECURITY_TRUSTSTORE_PASSWORD="${KAFKA_TRUSTSTORE_PASSWORD}"
 
     else
         echo "KAFKA_CERT_MODE must be one of 'CERTGEN,RETRIEVE' but was ${KAFKA_CERT_MODE}"

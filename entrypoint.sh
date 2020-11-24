@@ -33,6 +33,7 @@ then
         echo "Generating cert for host ${HOSTNAME}"
 
         acm-pca-cert-generator \
+            --region "${AWS_REGION}" \
             --subject-cn "${HOSTNAME}" \
             --keystore-path "${KAFKA_KEYSTORE_PATH}" \
             --keystore-password "${KAFKA_KEYSTORE_PASSWORD}" \
@@ -40,8 +41,7 @@ then
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
             --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}" >> /var/log/acm-cert-retriever.log 2>&1 \
-            --region "${AWS_REGION}"
+            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}"
 
         echo "Cert generation result is $? for ${HOSTNAME}"
 
@@ -63,7 +63,7 @@ then
             --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
             --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
             --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}" >> /var/log/acm-cert-retriever.log 2>&1
+            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}"
 
         echo "Cert retrieve result is $? for ${RETRIEVER_ACM_CERT_ARN}"
 

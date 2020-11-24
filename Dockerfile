@@ -50,6 +50,8 @@ COPY --from=build /build/ucfs-claimant-kafka-consumer.jar .
 RUN addgroup $GROUP_NAME
 RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 COPY ./entrypoint.sh /
+COPY ./ucfs-claimant-kafka-consumer-keystore.jks ./development-keystore.jks
+COPY ./ucfs-claimant-kafka-consumer-truststore.jks ./development-truststore.jks
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
 RUN chown -R $USER_NAME.$GROUP_NAME -R /var
 RUN chmod a+rw /var/log

@@ -3,15 +3,19 @@ package ucfs.claimant.consumer
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
-import ucfs.claimant.consumer.service.ConsumerService
+import org.springframework.cache.annotation.EnableCaching
+import org.springframework.retry.annotation.EnableRetry
+import ucfs.claimant.consumer.orchestrate.Orchestrator
 import kotlin.time.ExperimentalTime
 
 @SpringBootApplication
-class UcfsClaimantConsumer(private val consumerService: ConsumerService) : CommandLineRunner {
+@EnableCaching
+@EnableRetry
+class UcfsClaimantConsumer(private val orchestrator: Orchestrator) : CommandLineRunner {
 
     @ExperimentalTime
     override fun run(vararg args: String?) {
-        consumerService.consume()
+        orchestrator.orchestrate()
     }
 
 }

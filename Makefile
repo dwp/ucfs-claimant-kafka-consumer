@@ -26,7 +26,6 @@ git-hooks: ## Set up hooks in .githooks
 	@git submodule update --init .githooks ; \
 	git config core.hooksPath .githooks \
 
-
 certificates: ## generate self-signed certificates, keystores for local development.
 	./generate-certificates.sh
 
@@ -52,11 +51,12 @@ dks:
 		done; \
 	}
 
-.PHONY: services
 services: kafka localstack dks ## Bring up zookeeper, kafka
 
-.PHONY: up
-up: services ## Bring up the consumer in Docker with supporting services
+build: ## Build the container
+	docker-compose build ucfs-claimant-kafka-consumer
+
+up: build services ## Bring up the consumer in Docker with supporting services
 	docker-compose up --build -d ucfs-claimant-kafka-consumer
 
 tests: up ## Run the integration tests
@@ -64,11 +64,9 @@ tests: up ## Run the integration tests
 
 integration-all: certificates up tests ## Run the integration tests
 
-.PHONY: down
 down: ## Bring down all containers
 	docker-compose down
 
-.PHONY: destroy
 destroy: down ## Bring down the containers and services then delete all volumes, networks
 	docker network prune -f
 	docker volume prune -f
@@ -90,6 +88,7 @@ delete-topics: ## Clear the integration test queue.
 	make list-topics
 
 push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
+	@{ \
 	@{ \
 		aws ecr get-login-password --region $(aws_default_region) --profile dataworks-development | docker login --username AWS --password-stdin $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com; \
 		docker tag ucfs-claimant-kafka-consumer:latest $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/$(temp_image_name):latest; \

@@ -47,9 +47,12 @@ then
 
     elif [ "${KAFKA_CERT_MODE}" = "RETRIEVE" ]; then
 
-        echo "Retrieving cert from ${RETRIEVER_ACM_CERT_ARN}"
-
         export RETRIEVER_ACM_KEY_PASSPHRASE="$(uuidgen)"
+
+        echo "Finding acm-cert-retriever"
+        which acm-cert-retriever
+
+        echo "Retrieving cert from ${RETRIEVER_ACM_CERT_ARN}"
 
         acm-cert-retriever \
             --acm-key-passphrase "${RETRIEVER_ACM_KEY_PASSPHRASE}" \

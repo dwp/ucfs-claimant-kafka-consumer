@@ -64,6 +64,8 @@ tests: up ## Run the integration tests
 
 integration-all: certificates up tests ## Run the integration tests
 
+integration-all-with-reset: destroy integration-all ## Run the integration tests on a fresh stack
+
 down: ## Bring down all containers
 	docker-compose down
 

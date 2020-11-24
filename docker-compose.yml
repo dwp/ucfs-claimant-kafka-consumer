@@ -61,7 +61,6 @@ services:
       SECURITY_TRUSTSTORE: development-truststore.jks
       SECURITY_TRUSTSTORE_PASSWORD: changeit
       SPRING_PROFILES_ACTIVE: QUEUE_TARGET
-    command: ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
 
   ucfs-claimant-kafka-consumer-tests:
     image: ucfs-claimant-kafka-consumer-tests:latest

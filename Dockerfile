@@ -43,19 +43,19 @@ RUN which acm-cert-retriever
 ENV USER_NAME=uckc
 ENV GROUP_NAME=uckc
 
+COPY ./entrypoint.sh /
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
+
 RUN mkdir /ucfs-claimant-kafka-consumer
 WORKDIR /ucfs-claimant-kafka-consumer
 
 COPY --from=build /build/ucfs-claimant-kafka-consumer.jar .
 RUN addgroup $GROUP_NAME
 RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
-COPY ./entrypoint.sh /
 COPY ./ucfs-claimant-kafka-consumer-keystore.jks ./development-keystore.jks
 COPY ./ucfs-claimant-kafka-consumer-truststore.jks ./development-truststore.jks
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
-RUN chown -R $USER_NAME.$GROUP_NAME -R /var
+RUN chown -R $USER_NAME.$GROUP_NAME /var
 RUN chmod a+rw /var/log
 USER $USER_NAME
-RUN pwd && ls
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]

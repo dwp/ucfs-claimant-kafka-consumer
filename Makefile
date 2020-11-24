@@ -1,5 +1,9 @@
 SHELL:=bash
 
+aws_mgmt_dev_account="NOT_SET"
+aws_default_region="NOT_SET"
+temp_image_name="ucfs-claimant-kafka-consumer-test"
+
 default: help
 
 .PHONY: help
@@ -84,3 +88,10 @@ delete-topics: ## Clear the integration test queue.
 	make delete-topic topic="db.database.collection3.success"
 	make delete-topic topic="dead.letter.queue"
 	make list-topics
+
+push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
+	@{ \
+		aws ecr get-login-password --region $(aws_default_region) --profile dataworks-development | docker login --username AWS --password-stdin $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com; \
+		docker tag ucfs-claimant-kafka-consumer:latest $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/$(temp_image_name):latest; \
+		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/$(temp_image_name):latest; \
+	}

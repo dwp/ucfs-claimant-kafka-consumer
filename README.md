@@ -1,7 +1,7 @@
 # UCFS Claimant Kafka Consumer
 
-Subscribes to the configured topics, logs the records on the console, discards
-the records.
+Subscribes to the configured topics, decrypts them, logs them to the console
+or writes them to a "success" topic derived from the source topic.
 
 ## Makefile
 

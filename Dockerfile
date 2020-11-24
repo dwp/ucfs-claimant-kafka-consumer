@@ -10,9 +10,6 @@ RUN ls -la /build/
 
 FROM openjdk:14-alpine
 
-ARG http_proxy_host=""
-ARG http_proxy_port=""
-
 ARG http_proxy_full=""
 
 # Set environment variables for apk
@@ -52,6 +49,7 @@ RUN addgroup $GROUP_NAME
 RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 COPY ./entrypoint.sh /
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
+RUN chmod a+rw /var/log
 USER $USER_NAME
 RUN pwd && ls
 ENTRYPOINT ["/entrypoint.sh"]

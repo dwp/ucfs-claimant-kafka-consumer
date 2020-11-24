@@ -49,6 +49,7 @@ RUN addgroup $GROUP_NAME
 RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 COPY ./entrypoint.sh /
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
+RUN chown -R $USER_NAME.$GROUP_NAME /var/log
 RUN chmod a+rw /var/log
 USER $USER_NAME
 RUN pwd && ls

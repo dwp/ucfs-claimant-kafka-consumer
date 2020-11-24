@@ -33,7 +33,6 @@ then
         echo "Generating cert for host ${HOSTNAME}"
 
         acm-pca-cert-generator \
-            --region "${AWS_REGION}" \
             --subject-cn "${HOSTNAME}" \
             --keystore-path "${KAFKA_KEYSTORE_PATH}" \
             --keystore-password "${KAFKA_KEYSTORE_PASSWORD}" \
@@ -55,7 +54,6 @@ then
         echo "Retrieving cert from ${RETRIEVER_ACM_CERT_ARN}"
 
         acm-cert-retriever \
-            --region "${AWS_REGION}" \
             --acm-key-passphrase "${RETRIEVER_ACM_KEY_PASSPHRASE}" \
             --keystore-path "${KAFKA_KEYSTORE_PATH}" \
             --keystore-password "${KAFKA_KEYSTORE_PASSWORD}" \

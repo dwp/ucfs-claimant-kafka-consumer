@@ -2,7 +2,7 @@ SHELL:=bash
 
 aws_mgmt_dev_account="NOT_SET"
 aws_default_region="NOT_SET"
-temp_image_name="ucfs-claimant-kafka-consumer-test"
+temp_image_tag="my-test"
 
 default: help
 
@@ -89,8 +89,7 @@ delete-topics: ## Clear the integration test queue.
 
 push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 	@{ \
-	@{ \
-		aws ecr get-login-password --region $(aws_default_region) --profile dataworks-development | docker login --username AWS --password-stdin $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com; \
-		docker tag ucfs-claimant-kafka-consumer:latest $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/$(temp_image_name):latest; \
-		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/$(temp_image_name):latest; \
+		aws ecr get-login-password --region $(aws_default_region) --profile dataworks-management-dev | docker login --username AWS --password-stdin $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com; \
+		docker tag ucfs-claimant-kafka-consumer $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
+		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 	}

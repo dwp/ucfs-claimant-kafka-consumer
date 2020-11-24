@@ -10,6 +10,14 @@ basic set of operations. These can be checked by running `make help`
 
 To bring up the app and run the integration tests run `make tests`.
 
+### To push a container from local dev into managemnet-dev
+
+You can run the following, to reduce our development cycle time in AWS;
+
+```
+make push-local-to-ecr aws_mgmt_dev_account="12345678" aws_default_region="eu-west-X"
+```
+
 ## High level view
 
 ### Orchestration
@@ -108,8 +116,7 @@ variables or a mixture of the two.
 ### SSL Mutual Authentication (CERTGEN mode)
 
 By default the SSL is enabled but has no defaults. These must either be
-configured in full or disabled entirely via `K2HB_KAFKA_INSECURE=FALSE`
-and `K2HB_KAFKA_CERT_MODE=CERTGEN`.
+configured in full using `K2HB_KAFKA_CERT_MODE=CERTGEN`, or disabled entirely using `K2HB_KAFKA_INSECURE=FALSE`.
 
 For an authoritative full list of arguments see the tool help; Arguments not listed here are
 defaulted in the `entrypoint.sh` script.
@@ -148,12 +155,10 @@ defaulted in the `entrypoint.sh` script.
 * **CERTGEN_LOG_LEVEL**
     The log level of the certificate generator (`CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`)
 
-
 ### SSL Mutual Authentication (RETRIEVE mode)
 
 By default the SSL is enabled but has no defaults. These must either be
-configured in full or disabled entirely via `KAFKA_INSECURE=FALSE`
-and `KAFKA_CERT_MODE=RETRIEVE`.
+configured in full using `KAFKA_CERT_MODE=RETRIEVE`, or disabled entirely with `KAFKA_INSECURE=FALSE`.
 
 For an authoritative full list of arguments see the tool help; Arguments not listed here are
 defaulted in the `entrypoint.sh` script. These env vars will be overwritten by flags given in `entrypoint.sh`.

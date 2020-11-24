@@ -2,24 +2,15 @@ package ucfs.claimant.consumer.processor.impl
 
 import org.springframework.stereotype.Component
 import ucfs.claimant.consumer.domain.JsonProcessingOutput
-import ucfs.claimant.consumer.domain.SourceRecord
+import ucfs.claimant.consumer.domain.ValidationProcessingResult
 import ucfs.claimant.consumer.processor.JsonProcessor
-import ucfs.claimant.consumer.utility.JsonExtensions.jsonObject
-import ucfs.claimant.consumer.utility.LoggingExtensions.logFailedProcessingStep
-import uk.gov.dwp.dataworks.logging.DataworksLogger
+import ucfs.claimant.consumer.utility.FunctionalUtility
+import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 
 @Component
 class JsonProcessorImpl : JsonProcessor {
-    override fun process(record: Pair<SourceRecord, ByteArray>): JsonProcessingOutput =
+    override fun process(record: ValidationProcessingResult): JsonProcessingOutput =
             record.second.jsonObject().map {
                 Pair(record.first, it)
-            }.mapLeft {
-                logger.logFailedProcessingStep("Failed to parse json", record.first, it)
-                record.first
-            }
-
-    companion object {
-        private val logger = DataworksLogger.getLogger(JsonProcessorImpl::class)
-    }
-
+            }.mapLeft { FunctionalUtility.processingFailure(record.first, it, "Failed to parse json") }
 }

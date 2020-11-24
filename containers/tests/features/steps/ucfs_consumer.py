@@ -28,25 +28,37 @@ def step_impl(context, count, state, topic):
     for i in range(int(count)):
         (initialisation_vector, encrypted_db_object) = encrypt(data_key, json.dumps({"data": f"data {i}"}))
         payload = {
+            "traceId": "string",
+            "unitOfWorkId": "string",
+            "@type": "string",
             "message": {
+                "@type": "string",
                 "_id": {"id": i},
+                "_lastModifiedDateTime": "2019-07-04T07:27:35.104+0000",
+                "db": "database",
+                "collection": "collection",
                 "dbObject": encrypted_db_object,
                 "encryption": {
                     "encryptedEncryptionKey": context.dks['ciphertextDataKey'],
-                    "keyEncryptionKeyId": context.dks['dataKeyEncryptionKeyId'],
+                    "keyEncryptionKeyId": "cloudhsm:1,2",
                     "initialisationVector": initialisation_vector
                 }
-            }
+            },
+            "version": "v1",
+            "timestamp": "2019-07-04T07:27:35.104+0000"
         }
 
         value = json.dumps(payload)
+        payload.pop("timestamp", None)
+        invalid_value = json.dumps(payload)
+
         if state == "valid":
             producer.send(topic=topic, value=value.encode(), key=f"{i}".encode())
         elif state == "mixed":
-            invalid_value = value if i % 2 == 0 else value[:50]
-            producer.send(topic=topic, value=invalid_value.encode(), key=f"{i}".encode())
+            mixed_value = value if i % 2 == 0 else invalid_value
+            producer.send(topic=topic, value=mixed_value.encode(), key=f"{i}".encode())
 
-        print(f"Sent to {topic}: {payload}")
+        print(f"Sent to {topic}: {value}")
     producer.close()
 
 

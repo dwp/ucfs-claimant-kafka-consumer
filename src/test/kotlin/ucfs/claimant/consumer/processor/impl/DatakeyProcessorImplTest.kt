@@ -43,7 +43,9 @@ class DatakeyProcessorImplTest : StringSpec() {
             }
             val processor = DatakeyProcessorImpl(datakeyRepository)
             val input = encryptionExtractionResult()
-            val queueRecord = mock<SourceRecord>()
+            val queueRecord = mock<SourceRecord> {
+                on { key() } doReturn "key".toByteArray()
+            }
             val result = processor.process(Pair(queueRecord, input))
             result shouldBeLeft queueRecord
         }

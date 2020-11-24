@@ -32,6 +32,7 @@ dependencies {
     implementation("org.apache.httpcomponents:httpclient:4.5.13")
     implementation("com.google.code.gson:gson:2.8.6")
     implementation("org.bouncycastle:bcprov-ext-jdk15on:1.62")
+    implementation("com.github.everit-org.json-schema:org.everit.json.schema:1.12.1")
     implementation("io.arrow-kt:arrow-core:0.11.0")
     implementation("io.arrow-kt:arrow-syntax:0.11.0")
     kapt("io.arrow-kt:arrow-meta:0.11.0")

@@ -10,11 +10,11 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import ucfs.claimant.consumer.domain.DataKeyServiceResult
-import ucfs.claimant.consumer.utility.JsonExtensions.getObject
-import ucfs.claimant.consumer.utility.JsonExtensions.getString
-import ucfs.claimant.consumer.utility.JsonExtensions.jsonObject
+import ucfs.claimant.consumer.utility.GsonExtensions.getObject
+import ucfs.claimant.consumer.utility.GsonExtensions.string
+import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 
-class JsonUtilityTest : StringSpec() {
+class GsonExtensionsTest : StringSpec() {
 
     init {
         "Returns right of object if object found" {
@@ -54,13 +54,13 @@ class JsonUtilityTest : StringSpec() {
 
         "Returns right of value if string found" {
             val obj = threeGenerations()
-            val result = obj.getString("grandparent", "parent", "child")
+            val result = obj.string("grandparent", "parent", "child")
             result shouldBeRight "childValue"
         }
 
         "Returns left of value if string is object" {
             val obj = fourGenerations()
-            val result = obj.getString("grandparent", "parent", "child")
+            val result = obj.string("grandparent", "parent", "child")
             result shouldBeLeft { (obj, str) ->
                 obj.json() shouldMatchJson """{ "child": { "grandchild": "grandchildValue"} }"""
                 str shouldBe "child"
@@ -69,7 +69,7 @@ class JsonUtilityTest : StringSpec() {
 
         "Returns left of object and missing key if string not found" {
             val obj = threeGenerations()
-            val result = obj.getString("grandparent", "parent", "orphan")
+            val result = obj.string("grandparent", "parent", "orphan")
             result shouldBeLeft { (obj, str) ->
                 obj.json() shouldMatchJson """{ "child":"childValue" }"""
                 str shouldBe "orphan"
@@ -78,7 +78,7 @@ class JsonUtilityTest : StringSpec() {
 
         "Returns left of object and missing key if parent not found" {
             val obj = threeGenerations()
-            val result = obj.getString("grandparent", "notthere", "child")
+            val result = obj.string("grandparent", "notthere", "child")
             result shouldBeLeft { (obj, str) ->
                 obj.json() shouldMatchJson """{"parent": {"child": "childValue" }}"""
                 str shouldBe "notthere"
@@ -116,15 +116,15 @@ class JsonUtilityTest : StringSpec() {
         }
 
         "ByteArray json object returns json object" {
-            val json = datakeyServiceResult().toByteArray()
+            val json = datakeyServiceResult()
             val result = json.jsonObject()
             result shouldBeRight {
-                it.json() shouldMatchJson String(json)
+                it.json() shouldMatchJson json
             }
         }
 
         "ByteArray json object returns left if malformed json" {
-            val json = malformedDatakeyServiceResult().toByteArray()
+            val json = malformedDatakeyServiceResult()
             val result = json.jsonObject()
             result shouldBeLeft { error ->
                 error.shouldBeInstanceOf<JsonParseException>()

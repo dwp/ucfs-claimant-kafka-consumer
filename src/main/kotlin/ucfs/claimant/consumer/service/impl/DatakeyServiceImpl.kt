@@ -14,7 +14,7 @@ import ucfs.claimant.consumer.domain.DatakeyServiceResult
 import ucfs.claimant.consumer.exception.DataKeyServiceUnavailableException
 import ucfs.claimant.consumer.provider.HttpClientProvider
 import ucfs.claimant.consumer.service.DatakeyService
-import ucfs.claimant.consumer.utility.JsonExtensions.jsonObject
+import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.io.BufferedReader
 import java.io.InputStreamReader

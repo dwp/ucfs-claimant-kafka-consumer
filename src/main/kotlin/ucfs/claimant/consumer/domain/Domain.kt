@@ -17,14 +17,16 @@ typealias DatakeyServiceResult = Either<Any, String>
 
 typealias SourceRecord = ConsumerRecord<ByteArray, ByteArray>
 
-typealias SourceRecordProcessingResult = Pair<SourceRecord, ByteArray>
+typealias SourceRecordProcessingResult = Pair<SourceRecord, String>
+typealias ValidationProcessingResult = Pair<SourceRecord, String>
 typealias JsonProcessingResult = Pair<SourceRecord, JsonObject>
 typealias ExtractionProcessingResult = Pair<SourceRecord, EncryptionExtractionResult>
 typealias DatakeyProcessingResult = Pair<SourceRecord, DatakeyResult>
 typealias DecryptionProcessingResult = Pair<SourceRecord, DecryptionResult>
 
-typealias QueueRecordProcessingOutput = Either<SourceRecord, SourceRecordProcessingResult>
+typealias SourceRecordProcessingOutput = Either<SourceRecord, SourceRecordProcessingResult>
 typealias JsonProcessingOutput = Either<SourceRecord, JsonProcessingResult>
+typealias ValidationProcessingOutput = Either<SourceRecord, ValidationProcessingResult>
 typealias ExtractionProcessingOutput = Either<SourceRecord, ExtractionProcessingResult>
 typealias DatakeyProcessingOutput = Either<SourceRecord, DatakeyProcessingResult>
 typealias DecryptionProcessingOutput = Either<SourceRecord, DecryptionProcessingResult>

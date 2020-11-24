@@ -15,12 +15,12 @@ class QueueRecordProcessorImplTest : StringSpec() {
             val value = ByteArray(1)
             val queueRecordProcessor = SourceRecordProcessorImpl()
             val queueRecord = mock<SourceRecord> {
-                on { value() } doReturn value
+                on { value() } doReturn "value".toByteArray()
             }
             val result = queueRecordProcessor.process(queueRecord)
             result shouldBeRight { (record, result) ->
                 record shouldBeSameInstanceAs queueRecord
-                result shouldBe value
+                result shouldBe "value"
             }
         }
 
@@ -28,6 +28,7 @@ class QueueRecordProcessorImplTest : StringSpec() {
             val queueRecordProcessor = SourceRecordProcessorImpl()
             val queueRecord = mock<SourceRecord> {
                 on { value() } doReturn null
+                on { key() } doReturn "key".toByteArray()
             }
             val result = queueRecordProcessor.process(queueRecord)
             result shouldBeLeft queueRecord

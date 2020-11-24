@@ -1,5 +1,9 @@
 SHELL:=bash
 
+aws_mgmt_dev_account="NOT_SET"
+aws_default_region="NOT_SET"
+temp_image_tag="my-test"
+
 default: help
 
 .PHONY: help
@@ -21,7 +25,6 @@ bootstrap: ## Bootstrap local environment for first use
 git-hooks: ## Set up hooks in .githooks
 	@git submodule update --init .githooks ; \
 	git config core.hooksPath .githooks \
-
 
 certificates: ## generate self-signed certificates, keystores for local development.
 	./generate-certificates.sh
@@ -48,23 +51,29 @@ dks:
 		done; \
 	}
 
-.PHONY: services
 services: kafka localstack dks ## Bring up zookeeper, kafka
 
-.PHONY: up
-up: services ## Bring up the consumer in Docker with supporting services
+build: ## Build the container
+	docker-compose build ucfs-claimant-kafka-consumer
+
+up: build services ## Bring up the consumer in Docker with supporting services
 	docker-compose up --build -d ucfs-claimant-kafka-consumer
 
-tests: up ## Run the integration tests
+build-tests:
+	docker-compose build ucfs-claimant-kafka-consumer-tests
+
+tests: up ## Run the integration tests without rebuilding the tests
 	docker-compose up ucfs-claimant-kafka-consumer-tests
 
-integration-all: certificates up tests ## Run the integration tests
+integration-all-github: certificates up tests ## Run the integration tests
 
-.PHONY: down
+integration-all-local: delete-topics integration-all-github ## Run the integration tests with fresh topics
+
+integration-all-with-reset: destroy certificates build-tests up tests ## Run the integration tests on a fresh stack
+
 down: ## Bring down all containers
 	docker-compose down
 
-.PHONY: destroy
 destroy: down ## Bring down the containers and services then delete all volumes, networks
 	docker network prune -f
 	docker volume prune -f
@@ -84,3 +93,10 @@ delete-topics: ## Clear the integration test queue.
 	make delete-topic topic="db.database.collection3.success"
 	make delete-topic topic="dead.letter.queue"
 	make list-topics
+
+push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
+	@{ \
+		aws ecr get-login-password --region $(aws_default_region) --profile dataworks-management-dev | docker login --username AWS --password-stdin $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com; \
+		docker tag ucfs-claimant-kafka-consumer $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
+		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
+	}

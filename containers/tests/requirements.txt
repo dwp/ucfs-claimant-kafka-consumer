@@ -1,5 +1,11 @@
 behave==1.2.6
+certifi==2020.11.8
+chardet==3.0.4
+idna==2.10
 kafka-python==2.0.2
 parse==1.18.0
 parse-type==0.5.2
+pycryptodome==3.9.9
+requests==2.25.0
 six==1.15.0
+urllib3==1.26.2

@@ -5,14 +5,14 @@ services:
     image: confluentinc/cp-zookeeper:4.1.0
     container_name: zookeeper
     ports:
-      - "2181:2181"
+      - 2181:2181
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
 
   kafka:
     image: confluentinc/cp-kafka:4.1.0
     ports:
-      - "9092:9092"
+      - 9092:9092
     container_name: kafka
     depends_on:
       - zookeeper
@@ -20,6 +20,30 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  dks:
+    image: dks
+    ports:
+      - 8443:8443
+    build:
+      context: containers/dks
+    container_name: dks
+
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - 4566:4566
+    container_name: localstack
+    environment:
+      - SERVICES=s3
+
+  localstack-init:
+    image: localstack-init
+    build:
+      context: containers/localstack
+    container_name: localstack-init
+    depends_on:
+      - localstack
 
   ucfs-claimant-kafka-consumer:
     image: ucfs-claimant-kafka-consumer:latest
@@ -30,6 +54,13 @@ services:
     environment:
       KAFKA_INSECURE: "true"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
+      SECURITY_KEY_PASSWORD: changeit
+      SECURITY_KEYSTORE: development-keystore.jks
+      SECURITY_KEYSTORE_ALIAS: cid
+      SECURITY_KEYSTORE_PASSWORD: changeit
+      SECURITY_TRUSTSTORE: development-truststore.jks
+      SECURITY_TRUSTSTORE_PASSWORD: changeit
+      SPRING_PROFILES_ACTIVE: QUEUE_TARGET
     command: ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
 
   ucfs-claimant-kafka-consumer-tests:

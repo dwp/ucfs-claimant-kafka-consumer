@@ -12,43 +12,21 @@ import kotlin.time.toJavaDuration
 @ConfigurationProperties(prefix = "kafka")
 @ExperimentalTime
 data class KafkaProperties(var bootstrapServers: String = "kafka:9092",
-                           var consumerGroup: String = "ucfs-claimant-consumers",
                            var useSsl: Boolean = false,
-                           var trustStore: String = "",
-                           var trustStorePassword: String = "",
-                           var keyStore: String = "",
-                           var keyStorePassword: String = "",
-                           var keyPassword: String = "",
+                           var consumerGroup: String = "ucfs-claimant-consumers",
                            var topicRegex: String = "",
                            var pollDurationSeconds: Int = 10,
                            var maxPollRecords: Int = 5000,
                            var maxPollIntervalMs: Int = 5.minutes.inMilliseconds.toInt(),
                            var fetchMaxBytes: Int = 1024 * 1024,
-                           var maxPartitionFetchBytes: Int = 1024 * 1024) {
+                           var maxPartitionFetchBytes: Int = 1024 * 1024,
+                           var dlqTopic: String = "dead.letter.queue") {
 
     @Bean
     fun bootstrapServers() = bootstrapServers
 
     @Bean
     fun consumerGroup() = consumerGroup
-
-    @Bean
-    fun trustStore() = trustStore
-
-    @Bean
-    fun trustStorePassword() = trustStorePassword
-
-    @Bean
-    fun keyStore() = keyStore
-
-    @Bean
-    fun keyStorePassword() = keyStorePassword
-
-    @Bean
-    fun keyPassword() = keyPassword
-
-    @Bean
-    fun useSsl() = useSsl
 
     @Bean
     fun topicRegex() = Regex(topicRegex)
@@ -68,4 +46,10 @@ data class KafkaProperties(var bootstrapServers: String = "kafka:9092",
 
     @Bean
     fun maxPartitionFetchBytes() = maxPartitionFetchBytes
+
+    @Bean
+    fun useSsl() = useSsl
+
+    @Bean
+    fun dlqTopic() = dlqTopic
 }

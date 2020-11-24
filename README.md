@@ -1,7 +1,7 @@
 # UCFS Claimant Kafka Consumer
 
-Subscribes to the configured topics, logs the records on the console, discards
-the records.
+Subscribes to the configured topics, decrypts them, logs them to the console
+or writes them to a "success" topic derived from the source topic.
 
 ## Makefile
 
@@ -9,6 +9,74 @@ The Makefile wraps some of the docker-compose commands to give a more unified
 basic set of operations. These can be checked by running `make help`
 
 To bring up the app and run the integration tests run `make tests`.
+
+## High level view
+
+### Orchestration
+
+The application is composed of a source (the kafka consumer class), a processor
+and a target. Batches of records are read from the source, put through the
+processor and then sent to the target, this is done by the orchestrator
+
+### The source records
+
+Batches of records are read from the kafka broker and then split up such that
+each sub-batch only contains records from a single same topic and partition.
+Each of these sub-batches are then passed to the processor.
+
+### The processor
+
+The orchestrator deals with the top-level compound processor which delegates
+the processing steps to a sequence of delegate processors, each of these
+performs one task.
+
+#### The delegate processors
+
+The delegate processors process the output of the previous processor in the
+chain.
+
+Using a functional programming pattern a processor returns an object called an
+`Either`, which either contains the result of a successful transformation
+(a `Right` or the result of an unsuccessful transformation (a `Left`).
+
+The following processor only processes the output of the previous one if the
+output is a `Right`, `Left` values pass through unchanged. At the end of the
+steps the results are split into `Lefts` and `Rights` - the `Rights` go to the
+success target (MySql or whatever it will be) and the `Lefts` go to the dead
+letter queue.
+
+To enable the dead letter queue processing to take place the `Left` value must
+always be the source record from kafka. And to allow each processor to return
+the source record as its `Left`, the `Right` value must always be a pair of
+values one of which is the source record and the other being the result of the
+successful processing step.
+
+#### Current processors
+
+* `SourceRecordProcessor` - simply reads and returns the value of the kafka
+  consumer record.
+* `JsonProcessor` - parse the source record value as a Json object.
+* `ExtractionProcessor` - extracts the encryption metadata from the Json
+  object (the encrypted key, the encrypting key id, and the initialisation
+      vector generated when encrypting the payload).
+* `DatakeyProcessor` - calls DKS to get the encrypted datakey decrypted.
+* `DecryptionProcessor` - decrypts the `dbObject`
+
+#### Future processors
+
+It will be necessary to add a `ValidationProcessor` and a
+`TransformationProcessor` to complete the processing step (future tickets will
+deliver these)
+
+### The targets
+
+At present there are two, neither of which will make it into production. One
+simply prints the processing output onto the console (or rather to the log), the
+other posts successfuly processed records to a kafka queue. This was to
+facilitate integration testing of the processor.
+
+Records that fail processing are sent to a dead letter queue and are considered
+dealt with.
 
 ## Configuration
 
@@ -20,20 +88,22 @@ variables or a mixture of the two.
 
 | Spring property              | Environment variable            | Purpose |
 |------------------------------|---------------------------------|---------|
+| dks.url                      | DKS_URL                         | The data key service url |
 | kafka.bootstrapServers       | KAFKA_BOOTSTRAP_SERVERS         | kafka server hosts and ports |
 | kafka.consumerGroup          | KAFKA_CONSUMER_GROUP            | The consumer group to join |
+| kafka.dlqTopic               | KAFKA_DLQ_TOPIC                 | The queue to which records that could not be processed are sent |
 | kafka.fetchMaxBytes          | KAFKA_FETCH_MAX_BYTES           | The max volume of data to get on each poll loop |
-| kafka.keyPassword            | KAFKA_KEY_PASSWORD              | Private key password |
-| kafka.keystore               | KAFKA_KEYSTORE                  | Path to keystore containing app certificates |
-| kafka.keystorePassword       | KAFKA_KEYSTORE_PASSWORD         | Keystore password |
 | kafka.maxPartitionFetchBytes | KAFKA_MAX_PARTITION_FETCH_BYTES | The max volume of data in an assigned partition that can be fetched before the poll returns |
 | kafka.maxPollIntervalMs      | KAFKA_MAX_POLL_INTERVAL_MS      | How long to wait inbetween polls before consumer is dropped from the group |
 | kafka.maxPollRecords         | KAFKA_MAX_POLL_RECORDS          | How many records to collect on each poll before returning |
 | kafka.pollDurationSeconds    | KAFKA_POLL_DURATION_SECONDS     | How long to poll before returning |
 | kafka.topicRegex             | KAFKA_TOPIC_REGEX               | Topics matching this regex will be subscribed to |
-| kafka.truststore             | KAFKA_TRUSTSTORE                | Path to keystore containing trusted certificates |
-| kafka.truststorePassword     | KAFKA_TRUSTSTORE_PASSWORD       | Truststore password |
 | kafka.useSsl                 | KAFKA_USE_SSL                   | Whether to enable a mutually authenticated connection |
+| security.keyPassword         | SECURITY_KEY_PASSWORD           | Private key password |
+| security.keystore            | SECURITY_KEYSTORE               | Path to keystore containing app certificates |
+| security.keystorePassword    | SECURITY_KEYSTORE_PASSWORD      | Keystore password |
+| security.truststore          | SECURITY_TRUSTSTORE             | Path to keystore containing trusted certificates, needs to allow access from DKS and the kafka broker |
+| security.truststorePassword  | SECURITY_TRUSTSTORE_PASSWORD    | Truststore password |
 
 ### SSL Mutual Authentication (CERTGEN mode)
 

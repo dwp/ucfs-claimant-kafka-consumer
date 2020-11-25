@@ -47,6 +47,12 @@ COPY ./entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
 
+RUN mkdir /etc/pki
+RUN mkdir /etc/pki/tls
+RUN mkdir /etc/pki/tls/private
+RUN mkdir /etc/pki/tls/cert
+RUN chown -R $USERNAME.$GROUP_NAME -R /etc/pki/
+
 RUN mkdir /ucfs-claimant-kafka-consumer
 WORKDIR /ucfs-claimant-kafka-consumer
 

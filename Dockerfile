@@ -30,6 +30,7 @@ RUN echo "===> Installing Dependencies ..." \
     && apk update \
     && apk upgrade \
     && echo "==Update done==" \
+    && apk add --no-cache ca-certificates \
     && apk add --no-cache util-linux \
     && echo "===> Installing acm_pca_cert_generator ..." \
     && apk add --no-cache g++ python3 python3-dev libffi-dev openssl-dev gcc py3-pip \
@@ -44,18 +45,24 @@ ENV USER_NAME=uckc
 ENV GROUP_NAME=uckc
 
 COPY ./entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
+
+RUN addgroup $GROUP_NAME
+RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
+RUN mkdir -p /etc/pki/tls/private
+RUN mkdir -p /etc/pki/tls/certs
+RUN mkdir -p /etc/pki/ca-trust/source/anchors
+RUN chown -R $USER_NAME.$GROUP_NAME /etc/pki/
 
 RUN mkdir /ucfs-claimant-kafka-consumer
 WORKDIR /ucfs-claimant-kafka-consumer
-
 COPY --from=build /build/ucfs-claimant-kafka-consumer.jar .
-RUN addgroup $GROUP_NAME
-RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 COPY ./ucfs-claimant-kafka-consumer-keystore.jks ./development-keystore.jks
 COPY ./ucfs-claimant-kafka-consumer-truststore.jks ./development-truststore.jks
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
 RUN chown -R $USER_NAME.$GROUP_NAME /var
 RUN chmod a+rw /var/log
 USER $USER_NAME
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
+

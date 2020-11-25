@@ -30,6 +30,7 @@ RUN echo "===> Installing Dependencies ..." \
     && apk update \
     && apk upgrade \
     && echo "==Update done==" \
+    && apk add --no-cache ca-certificates \
     && apk add --no-cache util-linux \
     && echo "===> Installing acm_pca_cert_generator ..." \
     && apk add --no-cache g++ python3 python3-dev libffi-dev openssl-dev gcc py3-pip \
@@ -44,8 +45,6 @@ ENV USER_NAME=uckc
 ENV GROUP_NAME=uckc
 
 COPY ./entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
 
 RUN addgroup $GROUP_NAME
 RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
@@ -63,3 +62,7 @@ RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer
 RUN chown -R $USER_NAME.$GROUP_NAME /var
 RUN chmod a+rw /var/log
 USER $USER_NAME
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
+

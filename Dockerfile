@@ -52,7 +52,7 @@ RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 RUN mkdir /etc/pki
 RUN mkdir /etc/pki/tls
 RUN mkdir /etc/pki/tls/private
-RUN mkdir /etc/pki/tls/cert
+RUN mkdir /etc/pki/tls/certs
 RUN chown -R $USER_NAME.$GROUP_NAME /etc/pki/
 
 RUN mkdir /ucfs-claimant-kafka-consumer

@@ -47,18 +47,17 @@ COPY ./entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
 
+RUN addgroup $GROUP_NAME
+RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 RUN mkdir /etc/pki
 RUN mkdir /etc/pki/tls
 RUN mkdir /etc/pki/tls/private
 RUN mkdir /etc/pki/tls/cert
-RUN chown -R $USERNAME.$GROUP_NAME -R /etc/pki/
+RUN chown -R $USER_NAME.$GROUP_NAME /etc/pki/
 
 RUN mkdir /ucfs-claimant-kafka-consumer
 WORKDIR /ucfs-claimant-kafka-consumer
-
 COPY --from=build /build/ucfs-claimant-kafka-consumer.jar .
-RUN addgroup $GROUP_NAME
-RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
 COPY ./ucfs-claimant-kafka-consumer-keystore.jks ./development-keystore.jks
 COPY ./ucfs-claimant-kafka-consumer-truststore.jks ./development-truststore.jks
 RUN chown -R $USER_NAME.$GROUP_NAME /ucfs-claimant-kafka-consumer

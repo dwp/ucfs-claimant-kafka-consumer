@@ -43,7 +43,9 @@ class DecryptionProcessorImplTest : StringSpec() {
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
             val json = json()
             val datakeyResult = DatakeyResult(json, initialisationVector, datakey)
-            val queueRecord = mock<SourceRecord>()
+            val queueRecord = mock<SourceRecord> {
+                on { key() } doReturn "key".toByteArray()
+            }
             val result = decryptionProcessor.process(Pair(queueRecord, datakeyResult))
             result shouldBeLeft queueRecord
         }

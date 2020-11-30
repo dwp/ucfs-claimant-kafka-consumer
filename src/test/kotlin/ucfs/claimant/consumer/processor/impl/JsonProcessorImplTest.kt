@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.processor.impl
 
 import com.google.gson.Gson
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
@@ -18,12 +19,12 @@ class JsonProcessorImplTest : StringSpec() {
                         "dbObject": "ENCRYPTED_OBJECT"
                     }
                 }
-            """.trimIndent().toByteArray()
+            """.trimIndent()
 
             val queueRecord = mock<SourceRecord>()
             val result = JsonProcessorImpl().process(Pair(queueRecord, json))
             result shouldBeRight { (record, result) ->
-                Gson().toJson(result) shouldMatchJson String(json)
+                Gson().toJson(result) shouldMatchJson json
                 record shouldBeSameInstanceAs queueRecord
             }
         }
@@ -33,9 +34,11 @@ class JsonProcessorImplTest : StringSpec() {
                     "message": {
                         "dbObject": "ENCRYPTED_OBJECT"
                     }
-            """.trimIndent().toByteArray()
+            """.trimIndent()
 
-            val record = mock<SourceRecord>()
+            val record = mock<SourceRecord> {
+                on { key() } doReturn "key".toByteArray()
+            }
             val result = JsonProcessorImpl().process(Pair(record, json))
             result shouldBeLeft {
                 it shouldBeSameInstanceAs record

@@ -12,7 +12,7 @@ object LoggingExtensions {
 
     private fun DataworksLogger.logFailedRecord(description: String, record: SourceRecord) {
         error("Failed record", "description" to description,
-                "key" to "${record.key()}", "topic" to "${record.topic()}",
+                "key" to String(record.key()), "topic" to "${record.topic()}",
                 "partition" to "${record.partition()}", "offset" to "${record.offset()}",
                 "timestamp" to "${record.timestamp()}")
     }

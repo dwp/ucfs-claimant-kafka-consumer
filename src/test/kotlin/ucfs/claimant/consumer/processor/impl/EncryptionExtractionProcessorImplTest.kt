@@ -2,6 +2,7 @@ package ucfs.claimant.consumer.processor.impl
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
@@ -51,7 +52,9 @@ class EncryptionExtractionProcessorImplTest : StringSpec() {
 
         "Returns left if encryption block missing" {
             val json = Gson().fromJson("""{ "message": {} }""", JsonObject::class.java)
-            val queueRecord = mock<SourceRecord>()
+            val queueRecord = mock<SourceRecord> {
+                on { key() } doReturn "key".toByteArray()
+            }
             val result = ExtractionProcessorImpl().process(Pair(queueRecord, json))
             result shouldBeLeft queueRecord
         }
@@ -95,7 +98,9 @@ class EncryptionExtractionProcessorImplTest : StringSpec() {
 
     private fun validateLeft(encryptionBlock: String) {
         val (_, json) = encryptionBlockAndJson(encryptionBlock)
-        val queueRecord = mock<SourceRecord>()
+        val queueRecord = mock<SourceRecord> {
+            on { key() } doReturn "key".toByteArray()
+        }
         val result = ExtractionProcessorImpl().process(Pair(queueRecord, json))
         result shouldBeLeft queueRecord
     }

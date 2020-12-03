@@ -8,7 +8,7 @@ RUN gradle build
 RUN cp build/libs/ucfs-claimant-kafka-consumer-*.jar /build/ucfs-claimant-kafka-consumer.jar
 RUN ls -la /build/
 
-FROM openjdk:14-alpine
+FROM openjdk:16-alpine
 
 ARG http_proxy_full=""
 
@@ -24,7 +24,7 @@ RUN echo "ENV http: ${http_proxy}" \
     && echo "ENV HTTPS: ${HTTPS_PROXY}" \
     && echo "ARG full: ${http_proxy_full}"
 
-ENV acm_cert_helper_version="0.32.0"
+ENV acm_cert_helper_version="0.37.0"
 RUN echo "===> Installing Dependencies ..." \
     && echo "===> Updating base packages ..." \
     && apk update \
@@ -48,10 +48,8 @@ COPY ./entrypoint.sh /
 
 RUN addgroup $GROUP_NAME
 RUN adduser --system --ingroup $GROUP_NAME $USER_NAME
-RUN mkdir -p /etc/pki/tls/private
-RUN mkdir -p /etc/pki/tls/certs
-RUN mkdir -p /etc/pki/ca-trust/source/anchors
-RUN chown -R $USER_NAME.$GROUP_NAME /etc/pki/
+RUN chown -R $USER_NAME.$GROUP_NAME /etc/ssl/
+RUN chown -R $USER_NAME.$GROUP_NAME /usr/local/share/ca-certificates/
 
 RUN mkdir /ucfs-claimant-kafka-consumer
 WORKDIR /ucfs-claimant-kafka-consumer

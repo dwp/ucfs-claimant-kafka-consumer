@@ -8,7 +8,7 @@ RUN gradle build
 RUN cp build/libs/ucfs-claimant-kafka-consumer-*.jar /build/ucfs-claimant-kafka-consumer.jar
 RUN ls -la /build/
 
-FROM openjdk:14-alpine
+FROM openjdk:16-alpine
 
 ARG http_proxy_full=""
 

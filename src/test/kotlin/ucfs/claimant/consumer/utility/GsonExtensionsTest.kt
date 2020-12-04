@@ -9,14 +9,36 @@ import io.kotest.assertions.json.shouldMatchJson
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import ucfs.claimant.consumer.domain.DataKeyServiceResult
+import ucfs.claimant.consumer.domain.DataKeyDecryptionServiceData
 import ucfs.claimant.consumer.utility.GsonExtensions.getObject
-import ucfs.claimant.consumer.utility.GsonExtensions.string
+import ucfs.claimant.consumer.utility.GsonExtensions.json
 import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
+import ucfs.claimant.consumer.utility.GsonExtensions.list
+import ucfs.claimant.consumer.utility.GsonExtensions.nullableInteger
+import ucfs.claimant.consumer.utility.GsonExtensions.string
 
 class GsonExtensionsTest : StringSpec() {
 
     init {
+
+        "Nullable integer return value if present" {
+            val obj = Gson().fromJson("""{ "key": 123 }""", JsonObject::class.java)
+            val result = obj.nullableInteger("key")
+            result shouldBe 123
+        }
+
+        "Nullable integer returns null if value null" {
+            val obj = Gson().fromJson("""{ "key": null }""", JsonObject::class.java)
+            val result = obj.nullableInteger("key")
+            result shouldBe null
+        }
+
+        "Nullable integer returns null if key not present" {
+            val obj = Gson().fromJson("""{}""", JsonObject::class.java)
+            val result = obj.nullableInteger("key")
+            result shouldBe null
+        }
+
         "Returns right of object if object found" {
             val obj = fourGenerations()
             val result = obj.getObject("grandparent", "parent", "child")
@@ -58,6 +80,21 @@ class GsonExtensionsTest : StringSpec() {
             result shouldBeRight "childValue"
         }
 
+        "Returns left of value if value is null" {
+            val obj = Gson().fromJson("""
+                {
+                    "parent": {
+                        "child": null
+                    }
+                }
+            """.trimIndent(), JsonObject::class.java)
+            val result = obj.string("parent", "child")
+            result shouldBeLeft { (obj, str) ->
+                obj.toString() shouldMatchJson """{"child": null}"""
+                str shouldBe "child"
+            }
+        }
+
         "Returns left of value if string is object" {
             val obj = fourGenerations()
             val result = obj.string("grandparent", "parent", "child")
@@ -87,13 +124,13 @@ class GsonExtensionsTest : StringSpec() {
 
         "String json object <T> returns correct class" {
             val json = datakeyServiceResult()
-            val result = json.jsonObject(DataKeyServiceResult::class.java)
-            result shouldBeRight DataKeyServiceResult(encryptingKeyId, plaintextDatakey, encryptedDatakey)
+            val result = json.jsonObject(DataKeyDecryptionServiceData::class.java)
+            result shouldBeRight DataKeyDecryptionServiceData(encryptingKeyId, plaintextDatakey, encryptedDatakey)
         }
 
         "String json object <T> returns left if malformed json" {
             val json = malformedDatakeyServiceResult()
-            val result = json.jsonObject(DataKeyServiceResult::class.java)
+            val result = json.jsonObject(DataKeyDecryptionServiceData::class.java)
             result shouldBeLeft { error ->
                 error.shouldBeInstanceOf<JsonParseException>()
             }
@@ -128,6 +165,42 @@ class GsonExtensionsTest : StringSpec() {
             val result = json.jsonObject()
             result shouldBeLeft { error ->
                 error.shouldBeInstanceOf<JsonParseException>()
+            }
+        }
+
+        "Array returns right of list" {
+            val validJson = """
+                {
+                    "grandparent": {
+                        "parent": {
+                            "child": [ "string1", "string2", "string3"]
+                        }
+                    }
+                }
+            """.trimIndent()
+
+            val obj = Gson().fromJson(validJson, JsonObject::class.java)
+            val actual = obj.list<String>("grandparent", "parent", "child")
+            actual shouldBeRight {
+                it shouldBe listOf("string1", "string2", "string3")
+            }
+        }
+
+        "String instead of array returns left" {
+            val obj = Gson().fromJson(threeGenerations(), JsonObject::class.java)
+            val actual = obj.list<String>("grandparent", "parent", "child")
+            actual shouldBeLeft { (json, elementName) ->
+                json.toString() shouldMatchJson """{ "child": "childValue" }"""
+                elementName shouldBe "child"
+            }
+        }
+
+        "Object instead of array returns left" {
+            val obj = Gson().fromJson(fourGenerations(), JsonObject::class.java)
+            val actual = obj.list<String>("grandparent", "parent", "child")
+            actual shouldBeLeft { (json, elementName) ->
+                json.toString() shouldMatchJson """{ "child": { "grandchild": "grandchildValue" } }"""
+                elementName shouldBe "child"
             }
         }
 
@@ -166,6 +239,5 @@ class GsonExtensionsTest : StringSpec() {
                 }
             """.trimIndent().toJsonObject()
 
-    private fun JsonObject.json() = Gson().toJson(this)
     private fun String.toJsonObject() = Gson().fromJson(this, JsonObject::class.java)
 }

@@ -9,7 +9,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.springframework.stereotype.Service
 import sun.misc.Signal
-import ucfs.claimant.consumer.domain.DecryptionProcessingOutput
+import ucfs.claimant.consumer.domain.TransformationProcessingOutput
 import ucfs.claimant.consumer.orchestrate.Orchestrator
 import ucfs.claimant.consumer.processor.CompoundProcessor
 import ucfs.claimant.consumer.target.FailureTarget
@@ -55,9 +55,9 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
     private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<ConsumerRecord<ByteArray, ByteArray>>) {
         try {
             val (successes, failures) =
-                    records.map(compoundProcessor::process).partition(DecryptionProcessingOutput::isRight)
+                    records.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
             failureTarget.send(failures.mapNotNull { it.swap().orNull() })
-            successTarget.send(topicPartition.topic(), successes.mapNotNull(DecryptionProcessingOutput::orNull))
+            successTarget.send(topicPartition.topic(), successes.mapNotNull(TransformationProcessingOutput::orNull))
             lastPosition(records).let { lastPosition ->
                 logger.info("Processed batch, committing offset",
                         "topic" to topicPartition.topic(), "partition" to "${topicPartition.partition()}",
@@ -90,7 +90,6 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             wakeup()
         }
     }
-
 
     companion object {
         private val logger = DataworksLogger.getLogger(OrchestratorImpl::class)

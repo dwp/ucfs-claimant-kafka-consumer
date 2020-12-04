@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.3.5.RELEASE"
+    id("org.springframework.boot") version "2.4.1"
     id("io.spring.dependency-management") version "1.0.10.RELEASE"
-    kotlin("jvm") version "1.4.10"
-    kotlin("plugin.spring") version "1.4.10"
-    kotlin("kapt") version "1.4.10"
+    kotlin("jvm") version "1.4.21"
+    kotlin("plugin.spring") version "1.4.21"
+    kotlin("kapt") version "1.4.21"
 }
 
 group = "gov.dwp.dataworks.kafka"
@@ -35,6 +35,10 @@ dependencies {
     implementation("com.github.everit-org.json-schema:org.everit.json.schema:1.12.1")
     implementation("io.arrow-kt:arrow-core:0.11.0")
     implementation("io.arrow-kt:arrow-syntax:0.11.0")
+    implementation("software.amazon.awssdk:ssm:2.15.45")
+    implementation("software.amazon.awssdk:kms:2.15.45")
+    implementation("com.github.ben-manes.caffeine:caffeine:2.8.8")
+
     kapt("io.arrow-kt:arrow-meta:0.11.0")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 

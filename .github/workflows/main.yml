@@ -17,7 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Integration tests
-        run: make integration-all-github
+        run: |
+          make certificates
+          make tests
 
   get-publish-version:
     runs-on: ubuntu-latest

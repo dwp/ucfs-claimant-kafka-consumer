@@ -2,45 +2,96 @@ package ucfs.claimant.consumer.utility
 
 import arrow.core.Either
 import arrow.core.flatMap
-import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
+import com.google.gson.reflect.TypeToken
 import ucfs.claimant.consumer.utility.FunctionalUtility.encase
 import uk.gov.dwp.dataworks.logging.DataworksLogger
+import java.lang.reflect.Type
 
 object GsonExtensions {
 
+    fun Any.json(): String = gson.toJson(this)
+
+    fun JsonObject.nullableInteger(vararg path: String): Number? = integer(*path).orNull()
+    fun JsonObject.nullableObject(vararg path: String): JsonObject? = getObject(*path).orNull()
+
     fun JsonObject.string(vararg path: String): Either<Pair<JsonObject, String>, String> =
-            when (path.size) {
-                1 -> get(path[0])?.takeIf(JsonElement::isJsonPrimitive)?.asJsonPrimitive?.takeIf(JsonPrimitive::isString)
-                        ?.asString?.let { Either.Right(it) } ?: {
-                    logger.error("Failed to extract descendant string",
-                            "path" to path.joinToString("/"))
-                    Either.Left(Pair(this, path.joinToString()))
-                } ()
-                else -> getChildObject(path[0]).flatMap { it.string(*path.sliceArray(1 until path.size)) }
-            }
+        primitive(JsonPrimitive::isString, JsonPrimitive::getAsString, *path)
+
+    fun JsonObject.integer(vararg path: String): Either<Pair<JsonObject, String>, Int> =
+        primitive(JsonPrimitive::isNumber, JsonPrimitive::getAsInt, *path)
+
+    fun JsonObject.boolean(vararg path: String): Either<Pair<JsonObject, String>, Boolean> =
+        primitive(JsonPrimitive::isBoolean, JsonPrimitive::getAsBoolean, *path)
 
     fun JsonObject.getObject(vararg path: String): Either<Pair<JsonObject, String>, JsonObject> =
             when (path.size) {
-                1 -> get(path[0])?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { Either.Right(it) } ?: {
-                    logger.error("Failed to extract descendant object",
-                            "path" to path.joinToString("/"))
+                1 -> get(path[0])?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { Either.Right(it) } ?: run {
+                    logger.error(
+                        "Failed to extract descendant object",
+                        "path" to path.joinToString("/")
+                    )
                     Either.Left(Pair(this, path.joinToString()))
-                } ()
+                }
                 else -> getChildObject(path[0]).flatMap { it.getObject(*path.sliceArray(1 until path.size)) }
             }
 
-    fun <T> String.jsonObject(classOfT: Class<T>) = encase { Gson().fromJson(this, classOfT) }
+    @Suppress("UNCHECKED_CAST")
+    fun <T> JsonObject.list(vararg path: String): Either<Pair<JsonObject, String>, List<T>> =
+        when (path.size) {
+            1 -> (get(path[0])?.takeIf(JsonElement::isJsonArray)?.asJsonArray?.let {
+                val f: () -> List<T> = {
+                    val type: Type = object: TypeToken<List<T>>() {}.type
+                    gson.fromJson(it.toString(), type)
+                }
+                encase { f() }.mapLeft {
+                    logger.error("Failed to parse descendant array", it,
+                        "path" to path.joinToString("/"))
+                    Either.Left(Pair(this, path.joinToString()))
+                }
+            } ?: run {
+                logger.error("Failed to extract descendant array","path" to path.joinToString("/"))
+                Either.Left(Pair(this, path.joinToString()))
+            }) as Either<Pair<JsonObject, String>, List<T>>
 
-    fun String.jsonObject() = encase { Gson().fromJson(this, JsonObject::class.java) }
+            else -> getChildObject(path[0]).flatMap {
+                it.list(*path.sliceArray(1 until path.size))
+            }
+        }
+
+    fun <T> String.jsonObject(classOfT: Class<T>) = this.encase {
+        gson.fromJson(this, classOfT)
+    }
+
+    fun String.jsonObject() = this.encase {
+        gson.fromJson(this, JsonObject::class.java)
+    }
+
+    private fun <T> JsonObject.primitive(predicate: JsonPrimitive.() -> Boolean,
+                                         extractor: JsonPrimitive.() -> T,
+                                         vararg path: String): Either<Pair<JsonObject, String>, T> =
+        when (path.size) {
+            1 -> get(path[0])?.
+                takeIf(JsonElement::isJsonPrimitive)?.asJsonPrimitive?.
+                takeIf(predicate)?.run(extractor)?.
+                let { Either.Right(it) }
+                    ?:
+                run {
+                    logger.error("Failed to extract descendant primitive","path" to path.joinToString("/"))
+                    Either.Left(Pair(this, path.joinToString()))
+                }
+            else -> getChildObject(path[0]).flatMap { it.primitive(predicate, extractor, *path.sliceArray(1 until path.size)) }
+        }
 
     private fun JsonObject.getChildObject(childName: String): Either<Pair<JsonObject, String>, JsonObject> =
-            get(childName)?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { Either.Right(it) } ?: {
+            get(childName)?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { Either.Right(it) } ?: run {
                 logger.error("Failed to extract child object from parent", "child_name" to childName)
                 Either.Left(Pair(this, childName))
-            } ()
+            }
 
     private val logger = DataworksLogger.getLogger(GsonExtensions::class)
+    private val gson = GsonBuilder().serializeNulls().create()
 }

@@ -35,7 +35,7 @@ services:
       - 4566:4566
     container_name: localstack
     environment:
-      - SERVICES=s3
+      - SERVICES=kms,s3,ssm
 
   localstack-init:
     image: localstack-init
@@ -60,7 +60,7 @@ services:
       SECURITY_KEYSTORE_PASSWORD: changeit
       SECURITY_TRUSTSTORE: development-truststore.jks
       SECURITY_TRUSTSTORE_PASSWORD: changeit
-      SPRING_PROFILES_ACTIVE: QUEUE_TARGET
+      SPRING_PROFILES_ACTIVE: QUEUE_TARGET,LOCALSTACK
 
   ucfs-claimant-kafka-consumer-tests:
     image: ucfs-claimant-kafka-consumer-tests:latest

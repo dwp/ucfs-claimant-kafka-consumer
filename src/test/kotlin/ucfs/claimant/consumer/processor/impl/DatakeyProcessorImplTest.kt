@@ -11,37 +11,37 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import ucfs.claimant.consumer.domain.DatakeyResult
+import ucfs.claimant.consumer.domain.DataKeyResult
 import ucfs.claimant.consumer.domain.EncryptionExtractionResult
 import ucfs.claimant.consumer.domain.EncryptionMetadata
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.exception.DataKeyServiceUnavailableException
-import ucfs.claimant.consumer.service.DatakeyService
+import ucfs.claimant.consumer.repository.DecryptingDataKeyRepository
 
 class DatakeyProcessorImplTest : StringSpec() {
 
     init {
         "Returns right if datakey call successful" {
-            val datakeyRepository = mock<DatakeyService> {
-                on { decryptKey(encryptingKeyId, encryptedKey) } doReturn Either.Right(decryptedKey)
+            val datakeyRepository = mock<DecryptingDataKeyRepository> {
+                on { decryptDataKey(encryptingKeyId, encryptedKey) } doReturn Either.Right(decryptedKey)
             }
-            val processor = DatakeyProcessorImpl(datakeyRepository)
+            val processor = DataKeyProcessorImpl(datakeyRepository)
             val input = encryptionExtractionResult()
             val queueRecord = mock<SourceRecord>()
             val result = processor.process(Pair(queueRecord, input))
             result shouldBeRight { (record, result) ->
                 record shouldBeSameInstanceAs queueRecord
-                result shouldBe DatakeyResult(JsonObject(), initialisationVector, decryptedKey)
+                result shouldBe DataKeyResult(JsonObject(), initialisationVector, decryptedKey)
             }
         }
 
         "Returns left if can't decrypt datakey" {
-            val datakeyRepository = mock<DatakeyService> {
+            val datakeyRepository = mock<DecryptingDataKeyRepository> {
                 on {
-                    decryptKey(encryptingKeyId, encryptedKey)
+                    decryptDataKey(encryptingKeyId, encryptedKey)
                 } doReturn Either.Left(Pair(returnCode, Pair(encryptingKeyId, encryptedKey)))
             }
-            val processor = DatakeyProcessorImpl(datakeyRepository)
+            val processor = DataKeyProcessorImpl(datakeyRepository)
             val input = encryptionExtractionResult()
             val queueRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
@@ -52,10 +52,10 @@ class DatakeyProcessorImplTest : StringSpec() {
 
         "Throws exception if service unavailable" {
             val thrown = DataKeyServiceUnavailableException("Service Unavailable")
-            val datakeyRepository = mock<DatakeyService> {
-                on { decryptKey(encryptingKeyId, encryptedKey) } doThrow thrown
+            val datakeyRepository = mock<DecryptingDataKeyRepository> {
+                on { decryptDataKey(encryptingKeyId, encryptedKey) } doThrow thrown
             }
-            val processor = DatakeyProcessorImpl(datakeyRepository)
+            val processor = DataKeyProcessorImpl(datakeyRepository)
             val input = encryptionExtractionResult()
             val error = shouldThrow<DataKeyServiceUnavailableException> {
                 processor.process(Pair(mock(), input))

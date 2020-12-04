@@ -17,7 +17,6 @@ class UcfsClaimantConsumer(private val orchestrator: Orchestrator) : CommandLine
     override fun run(vararg args: String?) {
         orchestrator.orchestrate()
     }
-
 }
 
 fun main(args: Array<String>) {

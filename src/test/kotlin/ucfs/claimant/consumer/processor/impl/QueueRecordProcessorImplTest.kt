@@ -12,7 +12,6 @@ import ucfs.claimant.consumer.domain.SourceRecord
 class QueueRecordProcessorImplTest : StringSpec() {
     init {
         "Returns right if body present" {
-            val value = ByteArray(1)
             val queueRecordProcessor = SourceRecordProcessorImpl()
             val queueRecord = mock<SourceRecord> {
                 on { value() } doReturn "value".toByteArray()

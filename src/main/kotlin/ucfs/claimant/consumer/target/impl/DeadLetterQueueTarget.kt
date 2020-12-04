@@ -13,12 +13,12 @@ class DeadLetterQueueTarget(private val producerProvider: () -> KafkaProducer<By
 
     override fun send(records: List<SourceRecord>) {
         if (records.isNotEmpty()) {
-            logger.info("Sending records to the dlq", "count" to "${records.size}")
-            producerProvider().use { producer ->
-                records.forEach { consumerRecord ->
-                    producer.send(producerRecord(consumerRecord))
-                }
+            records.forEach {
+                logger.warn("Sending record to the dlq", "topic" to it.topic(),
+                    "key" to "${String(it.key())}", "offset" to "${it.offset()}", "partition" to "${it.partition()}",
+                    "message_timestamp" to "${it.timestamp()}")
             }
+            producerProvider().use { producer -> records.map(::producerRecord).forEach(producer::send) }
         }
     }
 

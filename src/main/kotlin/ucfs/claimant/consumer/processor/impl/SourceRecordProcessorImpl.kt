@@ -14,10 +14,10 @@ class SourceRecordProcessorImpl : SourceRecordProcessor {
     override fun process(record: SourceRecord): SourceRecordProcessingOutput =
             record.value()?.let { body ->
                 Either.Right(Pair(record, String(body)))
-            } ?: {
+            } ?: run {
                 logger.logFailedProcessingStep("Failed to get message value", record, "Value returned null")
                 Either.Left(record)
-            } ()
+            }
 
     companion object {
         private val logger = DataworksLogger.getLogger(SourceRecordProcessorImpl::class)

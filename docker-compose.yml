@@ -52,7 +52,7 @@ services:
     depends_on:
       - kafka
     environment:
-      KAFKA_INSECURE: "true"
+      KAFKA_USE_SSL: "false"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
       SECURITY_KEY_PASSWORD: changeit
       SECURITY_KEYSTORE: development-keystore.jks

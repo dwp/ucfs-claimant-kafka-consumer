@@ -116,7 +116,7 @@ variables or a mixture of the two.
 ### SSL Mutual Authentication (CERTGEN mode)
 
 By default the SSL is enabled but has no defaults. These must either be
-configured in full using `K2HB_KAFKA_CERT_MODE=CERTGEN`, or disabled entirely using `K2HB_KAFKA_INSECURE=FALSE`.
+configured in full using `KAFKA_CERT_MODE=CERTGEN`, or disabled entirely using `KAFKA_USE_SSL=FALSE`.
 
 For an authoritative full list of arguments see the tool help; Arguments not listed here are
 defaulted in the `entrypoint.sh` script.

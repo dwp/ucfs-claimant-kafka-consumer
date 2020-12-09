@@ -62,5 +62,4 @@ RUN chmod a+rw /var/log
 USER $USER_NAME
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["java", "-jar", "ucfs-claimant-kafka-consumer.jar"]
-
+CMD ["java", "-Xmx3g", "-jar", "ucfs-claimant-kafka-consumer.jar"]

@@ -40,9 +40,7 @@ then
             --keystore-password "${SECURITY_KEYSTORE_PASSWORD}" \
             --private-key-password "${SECURITY_KEY_PASSWORD}" \
             --truststore-path "${SECURITY_TRUSTSTORE}" \
-            --truststore-password "${SECURITY_TRUSTSTORE_PASSWORD}" \
-            --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}"
+            --truststore-password "${SECURITY_TRUSTSTORE_PASSWORD}"
 
         echo "Cert generation result is $? for ${HOSTNAME}"
 
@@ -63,9 +61,7 @@ then
             --keystore-password "${SECURITY_KEYSTORE_PASSWORD}" \
             --private-key-password "${SECURITY_KEY_PASSWORD}" \
             --truststore-path "${SECURITY_TRUSTSTORE}" \
-            --truststore-password "${SECURITY_TRUSTSTORE_PASSWORD}" \
-            --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}"
+            --truststore-password "${SECURITY_TRUSTSTORE_PASSWORD}"
 
         echo "Cert retrieve result is $? for ${RETRIEVER_ACM_CERT_ARN}"
 

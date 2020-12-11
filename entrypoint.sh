@@ -29,6 +29,7 @@ then
     export SECURITY_TRUSTSTORE_PASSWORD="$(uuidgen)"
 
     if [ "${KAFKA_CERT_MODE}" = "CERTGEN" ]; then
+        export SECURITY_KEYSTORE_ALIAS="${CERTGEN_PRIVATE_KEY_ALIAS}"
 
         echo "Generating cert for host ${HOSTNAME}"
 
@@ -46,6 +47,7 @@ then
         echo "Cert generation result is $? for ${HOSTNAME}"
 
     elif [ "${KAFKA_CERT_MODE}" = "RETRIEVE" ]; then
+        export SECURITY_KEYSTORE_ALIAS="${RETRIEVER_PRIVATE_KEY_ALIAS}"
 
         export RETRIEVER_ACM_KEY_PASSPHRASE="$(uuidgen)"
 

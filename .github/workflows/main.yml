@@ -17,8 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Integration tests
-#        run: make integration-all-github
-        run: echo "Not running integration tests temporarily"
+        run: make integration-all-github
 
   get-publish-version:
     runs-on: ubuntu-latest

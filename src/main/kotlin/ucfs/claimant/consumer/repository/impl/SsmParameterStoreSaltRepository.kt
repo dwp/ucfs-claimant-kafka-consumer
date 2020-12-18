@@ -1,12 +1,12 @@
 package ucfs.claimant.consumer.repository.impl
 
 import org.springframework.cache.annotation.Cacheable
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Repository
 import software.amazon.awssdk.services.ssm.SsmClient
 import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 import ucfs.claimant.consumer.repository.SaltRepository
 
-@Component
+@Repository
 class SsmParameterStoreSaltRepository(private val ssmClient: SsmClient, private val saltParameterName: String):
     SaltRepository {
 

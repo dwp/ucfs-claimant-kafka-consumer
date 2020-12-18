@@ -1,13 +1,13 @@
 package ucfs.claimant.consumer.repository.impl
 
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Repository
 import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.kms.model.GenerateDataKeyRequest
 import ucfs.claimant.consumer.domain.EncryptedDataKeyServiceData
 import ucfs.claimant.consumer.repository.EncryptingDataKeyRepository
 import java.util.*
 
-@Service
+@Repository
 class KmsEncryptingDataKeyRepository(private val kmsClient: KmsClient,
                                      private val cmkAlias: String,
                                      private val dataKeySpec: String): EncryptingDataKeyRepository {

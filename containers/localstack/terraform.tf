@@ -37,3 +37,18 @@ resource "aws_s3_bucket" "dw_local_crl" {
   bucket = "dw-local-crl"
   acl    = "public-read"
 }
+
+resource "aws_ssm_parameter" "ucfs_claimant_api_nino_salt" {
+  name  = "/ucfs/claimant-api/nino/salt"
+  type  = "String"
+  value = "SALT"
+}
+
+resource "aws_secretsmanager_secret" "ucfs_claimant_api_db_password" {
+  name = "ucfs-claimant-api-db-password"
+}
+
+resource "aws_secretsmanager_secret_version" "example" {
+  secret_id     = aws_secretsmanager_secret.ucfs_claimant_api_db_password.id
+  secret_string = "password"
+}

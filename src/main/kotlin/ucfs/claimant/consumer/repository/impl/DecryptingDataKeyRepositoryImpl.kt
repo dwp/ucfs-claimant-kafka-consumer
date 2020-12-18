@@ -8,7 +8,7 @@ import org.apache.http.util.EntityUtils
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.retry.annotation.Backoff
 import org.springframework.retry.annotation.Retryable
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Repository
 import ucfs.claimant.consumer.domain.DataKeyDecryptionServiceData
 import ucfs.claimant.consumer.domain.DataKeyServiceResponse
 import ucfs.claimant.consumer.exception.DataKeyServiceUnavailableException
@@ -21,7 +21,7 @@ import java.io.InputStreamReader
 import java.net.URLEncoder
 import java.util.*
 
-@Service
+@Repository
 class DecryptingDataKeyRepositoryImpl(private val httpClientProvider: HttpClientProvider,
                                       private val url: String) : DecryptingDataKeyRepository {
 

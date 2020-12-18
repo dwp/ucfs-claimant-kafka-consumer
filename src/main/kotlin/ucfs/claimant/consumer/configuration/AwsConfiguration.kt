@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import software.amazon.awssdk.services.kms.KmsClient
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.ssm.SsmClient
 
 @Configuration
@@ -14,4 +15,7 @@ class AwsConfiguration {
 
     @Bean
     fun kmsClient(): KmsClient = KmsClient.create()
+
+    @Bean
+    fun secretsManagerClient(): SecretsManagerClient =SecretsManagerClient.create()
 }

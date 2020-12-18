@@ -37,6 +37,7 @@ dependencies {
     implementation("io.arrow-kt:arrow-syntax:0.11.0")
     implementation("software.amazon.awssdk:ssm:2.15.45")
     implementation("software.amazon.awssdk:kms:2.15.45")
+    implementation("software.amazon.awssdk:secretsmanager:2.15.45")
     implementation("com.github.ben-manes.caffeine:caffeine:2.8.8")
 
     kapt("io.arrow-kt:arrow-meta:0.11.0")

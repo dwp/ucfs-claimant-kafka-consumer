@@ -96,8 +96,8 @@ variables or a mixture of the two.
 
 | Property                        | Environment variable              | Purpose | Default | Needs override |
 |---------------------------------|-----------------------------------|---------|---------|----------------|
-| aws.cmkAlias                    | AWS_CMK_ALIAS                     | The alias of the master ky in KMS | "alias/ucfs_etl_cmk" | |
-| aws.saltParameterName           | AWS_SALT_PARAMETER_NAME           | The name of the parameter in the parameter store which houses the salt value | "/ucfs/claimant-api/nino/salt" | |
+| aws.cmkAlias                    | AWS_CMK_ALIAS                     | The alias of the master ky in KMS |  | Yes |
+| aws.saltParameterName           | AWS_SALT_PARAMETER_NAME           | The name of the parameter in the parameter store which houses the salt value | | Yes |
 | cipher.dataKeySpec              | CIPHER_DATA_KEY_SPEC              | The specification of the datakeys that are generated | "AES_256" | |
 | cipher.decryptingAlgorithm      | CIPHER_DECRYPTING_ALGORITHM       | The cipher algorithm used to decrypt the data keys that encrypted the message dbObjects | "AES" | |
 | cipher.decryptingProvider       | CIPHER_DECRYPTING_PROVIDER        | The provider used to perform the data key decryption | "BC" | |

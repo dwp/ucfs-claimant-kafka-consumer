@@ -22,6 +22,16 @@ git-hooks: ## Set up hooks in .githooks
 certificates: git-hooks ## generate self-signed certificates, keystores for local development.
 	./generate-certificates.sh
 
+rds:
+	docker-compose up -d rds
+	@{ \
+		while ! docker logs rds 2>&1 | grep "^Version" | grep 3306; do \
+			echo Waiting for rds.; \
+			sleep 2; \
+		done; \
+		sleep 5; \
+	}
+
 localstack: ## bring up localstack container and wait for it to be ready
 	docker-compose up -d localstack
 	@{ \
@@ -44,7 +54,7 @@ dks:
 		done; \
 	}
 
-services: kafka localstack dks ## Bring up zookeeper, kafka
+services: kafka rds localstack dks ## Bring up zookeeper, kafka, the database etc.
 
 build: ## Build the container
 	docker-compose build ucfs-claimant-kafka-consumer
@@ -93,3 +103,9 @@ push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 		docker tag ucfs-claimant-kafka-consumer $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 	}
+
+mysql_root: ## Get a client session on the metadatastore database.
+	docker exec -it rds mysql --host=127.0.0.1 --user=root --password=password
+
+mysql_user: ## Get a client session on the metadatastore database.
+	docker exec -it rds mysql --host=127.0.0.1 --user=claimantapi --password=password

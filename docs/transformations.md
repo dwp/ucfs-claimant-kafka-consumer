@@ -1,8 +1,4 @@
-# As a Claimant developer
-
-# I want The Kafka consumer to transform the data is retrieves from the brokers
-
-# So that it is ready to be inserted into the RDS database
+# Transformation requirements
 
 ## Context
 
@@ -361,21 +357,3 @@ You can also view the complied output of the above on server {{claimant-api01.no
     }
 
 * the transformed message is safe to be logged, so log at INFO level. (!) The only unsafe element is the unhashed NINO, which must never be logged
-* Extend unit tests
-* Extend local integration tests
-
-### Docs
-
-This repo documents will need:
-* Update What the app does. add that it: transforms the dbObject from messages
-* Add example structures of transformed output
-* Add examples of unencrypted dbObject (from synthetic data)
-* Add examples of Kafka message (wrapper + encrypted dbObject) - see [example here|https://github.ucds.io/dip/aws-ingestion/blob/master/docs/interfaces.md#ucfs-business-data-event-interface]
-*Update how to configure the app i.e. list all parameter names with type, whether optional, default and description
-* Update how to run locally (aided heavily by Makefile commands)
-* Update how to run tests locally
-
-### Testing
-
-* local integration tests
-* local unit tests

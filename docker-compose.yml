@@ -21,6 +21,17 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  rds:
+    image: mysql:5.7
+    ports:
+      - 3306:3306
+    container_name: rds
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "metadatastore"
+      MYSQL_USER: "claimantapi"
+      MYSQL_PASSWORD: "password"
+
   dks:
     image: dks
     ports:
@@ -35,7 +46,7 @@ services:
       - 4566:4566
     container_name: localstack
     environment:
-      - SERVICES=kms,s3,ssm
+      - SERVICES=kms,s3,secretsmanager,ssm
 
   localstack-init:
     image: localstack-init

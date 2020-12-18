@@ -11,7 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: build and test
-        run: make integration-all-github
+        run: |
+          make certificates
+          make tests
       - name: Build Docker image
         run: docker build -t ${{ env.IMAGE_NAME }}:latest .
       - name: Run Snyk to check image for high vulnerabilities

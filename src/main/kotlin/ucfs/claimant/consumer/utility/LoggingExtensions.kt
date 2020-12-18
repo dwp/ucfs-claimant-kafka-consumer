@@ -11,12 +11,13 @@ object LoggingExtensions {
     }
 
     private fun DataworksLogger.logFailedRecord(description: String, record: SourceRecord) {
-        error("Failed record", "description" to description,
-                "key" to String(record.key()), "topic" to "${record.topic()}",
-                "partition" to "${record.partition()}", "offset" to "${record.offset()}",
-                "timestamp" to "${record.timestamp()}")
+        error(
+            "Failed record", "description" to description,
+            "key" to String(record.key()), "topic" to record.topic(),
+            "partition" to "${record.partition()}", "offset" to "${record.offset()}",
+            "timestamp" to "${record.timestamp()}"
+        )
     }
-
 
     private fun DataworksLogger.logThrowableOrAny(description: String, result: Any) {
         if (result is Throwable) {

@@ -10,23 +10,23 @@ import io.kotest.assertions.arrow.either.shouldBeRight
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import ucfs.claimant.consumer.domain.DatakeyResult
+import ucfs.claimant.consumer.domain.DataKeyResult
 import ucfs.claimant.consumer.domain.DecryptionResult
 import ucfs.claimant.consumer.domain.SourceRecord
-import ucfs.claimant.consumer.service.CipherService
+import ucfs.claimant.consumer.service.DecryptionService
 
 class DecryptionProcessorImplTest : StringSpec() {
 
     init {
         "Returns right on success" {
-            val cipherService = mock<CipherService> {
+            val cipherService = mock<DecryptionService> {
                 on {
                     decrypt(datakey, initialisationVector, encryptedDbObject)
                 } doReturn Either.Right(decryptedDbObject)
             }
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
             val json = json()
-            val datakeyResult = DatakeyResult(json, initialisationVector, datakey)
+            val datakeyResult = DataKeyResult(json, initialisationVector, datakey)
             val queueRecord = mock<SourceRecord>()
             val result = decryptionProcessor.process(Pair(queueRecord, datakeyResult))
             result shouldBeRight { (record, result) ->
@@ -37,12 +37,12 @@ class DecryptionProcessorImplTest : StringSpec() {
 
         "Returns left on failure" {
             val left = Exception("Failed to decrypt")
-            val cipherService = mock<CipherService> {
+            val cipherService = mock<DecryptionService> {
                 on { decrypt(datakey, initialisationVector, encryptedDbObject) } doReturn Either.Left(left)
             }
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
             val json = json()
-            val datakeyResult = DatakeyResult(json, initialisationVector, datakey)
+            val datakeyResult = DataKeyResult(json, initialisationVector, datakey)
             val queueRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }

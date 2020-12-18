@@ -5,6 +5,8 @@ source ./environment.sh
 main() {
   init
   create_crl_bucket
+  add_salt_parameter
+  add_kms_key
 }
 
 main

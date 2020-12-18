@@ -10,7 +10,7 @@ basic set of operations. These can be checked by running `make help`
 
 To bring up the app and run the integration tests run `make tests`.
 
-### To push a container from local dev into managemnet-dev
+### To push a container from local dev into management-dev
 
 You can run the following, to reduce our development cycle time in AWS;
 
@@ -63,24 +63,24 @@ successful processing step.
 
 * `SourceRecordProcessor` - simply reads and returns the value of the kafka
   consumer record.
+* `ValidationProcessor` - filters out messages that are not valid against the message schema.
 * `JsonProcessor` - parse the source record value as a Json object.
 * `ExtractionProcessor` - extracts the encryption metadata from the Json
   object (the encrypted key, the encrypting key id, and the initialisation
       vector generated when encrypting the payload).
 * `DatakeyProcessor` - calls DKS to get the encrypted datakey decrypted.
 * `DecryptionProcessor` - decrypts the `dbObject`
+* `TransformationProcessor` - transforms the decrypted dbObject in line with
+    the current batch process, the actual transformation is delegated to an inferior
+  transformer of which there are 3, one for each source topic (as each has a unique transformation 
+  applied)
 
-#### Future processors
-
-It will be necessary to add a `ValidationProcessor` and a
-`TransformationProcessor` to complete the processing step (future tickets will
-deliver these)
 
 ### The targets
 
 At present there are two, neither of which will make it into production. One
 simply prints the processing output onto the console (or rather to the log), the
-other posts successfuly processed records to a kafka queue. This was to
+other posts successfully processed records to a kafka queue. This is to
 facilitate integration testing of the processor.
 
 Records that fail processing are sent to a dead letter queue and are considered
@@ -94,24 +94,42 @@ The application can be configured with spring properties (specified on the
 command line or in an application properties file) or with environment
 variables or a mixture of the two.
 
-| Spring property              | Environment variable            | Purpose |
-|------------------------------|---------------------------------|---------|
-| dks.url                      | DKS_URL                         | The data key service url |
-| kafka.bootstrapServers       | KAFKA_BOOTSTRAP_SERVERS         | kafka server hosts and ports |
-| kafka.consumerGroup          | KAFKA_CONSUMER_GROUP            | The consumer group to join |
-| kafka.dlqTopic               | KAFKA_DLQ_TOPIC                 | The queue to which records that could not be processed are sent |
-| kafka.fetchMaxBytes          | KAFKA_FETCH_MAX_BYTES           | The max volume of data to get on each poll loop |
-| kafka.maxPartitionFetchBytes | KAFKA_MAX_PARTITION_FETCH_BYTES | The max volume of data in an assigned partition that can be fetched before the poll returns |
-| kafka.maxPollIntervalMs      | KAFKA_MAX_POLL_INTERVAL_MS      | How long to wait inbetween polls before consumer is dropped from the group |
-| kafka.maxPollRecords         | KAFKA_MAX_POLL_RECORDS          | How many records to collect on each poll before returning |
-| kafka.pollDurationSeconds    | KAFKA_POLL_DURATION_SECONDS     | How long to poll before returning |
-| kafka.topicRegex             | KAFKA_TOPIC_REGEX               | Topics matching this regex will be subscribed to |
-| kafka.useSsl                 | KAFKA_USE_SSL                   | Whether to enable a mutually authenticated connection |
-| security.keyPassword         | SECURITY_KEY_PASSWORD           | Private key password |
-| security.keystore            | SECURITY_KEYSTORE               | Path to keystore containing app certificates |
-| security.keystorePassword    | SECURITY_KEYSTORE_PASSWORD      | Keystore password |
-| security.truststore          | SECURITY_TRUSTSTORE             | Path to keystore containing trusted certificates, needs to allow access from DKS and the kafka broker |
-| security.truststorePassword  | SECURITY_TRUSTSTORE_PASSWORD    | Truststore password |
+| Property                        | Environment variable              | Purpose | Default | Needs override |
+|---------------------------------|-----------------------------------|---------|---------|----------------|
+| aws.cmkAlias                    | AWS_CMK_ALIAS                     | The alias of the master key in KMS |  | Yes |
+| aws.saltParameterName           | AWS_SALT_PARAMETER_NAME           | The name of the parameter in the parameter store which houses the salt value | | Yes |
+| cipher.dataKeySpec              | CIPHER_DATA_KEY_SPEC              | The specification of the datakeys that are generated | "AES_256" | |
+| cipher.decryptingAlgorithm      | CIPHER_DECRYPTING_ALGORITHM       | The cipher algorithm used to decrypt the data keys that encrypted the message dbObjects | "AES" | |
+| cipher.decryptingProvider       | CIPHER_DECRYPTING_PROVIDER        | The provider used to perform the data key decryption | "BC" | |
+| cipher.decryptingTransformation | CIPHER_DECRYPTING_TRANSFORMATION  | The cipher transformation to use when decrypting the incoming data keys | "AES/CTR/NoPadding" | |
+| cipher.encryptingAlgorithm      | CIPHER_ENCRYPTING_ALGORITHM       | The algorithm to use when encrypting the take home pay field | "AES" | |
+| cipher.encryptingProvider       | CIPHER_ENCRYPTING_PROVIDER        | The crypto provider used to perform the encryption | "BC" | |
+| cipher.encryptingTransformation | CIPHER_ENCRYPTING_TRANSFORMATION  | The algorithm to use when encrypting the take home pay field | "AES/GCM/NoPadding" | |
+| cipher.initialisationVectorSize | CIPHER_INITIALISATION_VECTOR_SIZE | The size of the initialisation vector to use when encrypting the take home pay field | 12 | |
+| cipher.maxKeyUsage              | CIPHER_MAX_KEY_USAGE              | How many times a datakey should be used before a new one is requested | 10 000 | |
+| dks.url                         | DKS_URL                           | The data key service url | "https://dks:8443" | Yes |
+| kafka.bootstrapServers          | KAFKA_BOOTSTRAP_SERVERS           | kafka server hosts and ports | "kafka:9092" | Yes |
+| kafka.consumerGroup             | KAFKA_CONSUMER_GROUP              | The consumer group to join | "ucfs-claimant-consumers" | |
+| kafka.dlqTopic                  | KAFKA_DLQ_TOPIC                   | The queue to which records that could not be processed are sent | "dead.letter.queue" | Yes|
+| kafka.fetchMaxBytes             | KAFKA_FETCH_MAX_BYTES             | The max volume of data to get on each poll loop | 1024 * 1024 | |
+| kafka.maxPartitionFetchBytes    | KAFKA_MAX_PARTITION_FETCH_BYTES   | The max volume of data in an assigned partition that can be fetched before the poll returns | 1024 * 1024 | |
+| kafka.maxPollIntervalMs         | KAFKA_MAX_POLL_INTERVAL_MS        | How long to wait in between polls before consumer is dropped from the group | 5.minutes.inMilliseconds.toInt() | |
+| kafka.maxPollRecords            | KAFKA_MAX_POLL_RECORDS            | How many records to collect on each poll before returning | 5 000 | |
+| kafka.pollDurationSeconds       | KAFKA_POLL_DURATION_SECONDS       | How long to poll before returning | 10 | Possibly |
+| kafka.topicRegex                | KAFKA_TOPIC_REGEX                 | Topics matching this regex will be subscribed to |  | Yes |
+| kafka.useSsl                    | KAFKA_USE_SSL                     | Whether to enable a mutually authenticated connection | false | Yes |
+| security.keyPassword            | SECURITY_KEY_PASSWORD             | Private key password | | Yes |
+| security.keystore               | SECURITY_KEYSTORE                 | Path to keystore containing app certificates | "" | Yes |
+| security.keystoreAlias          | SECURITY_KEYSTORE_ALIAS           | The private key alias | | Yes |
+| security.keystorePassword       | SECURITY_KEYSTORE_PASSWORD        | The keystore password | | Yes |
+| security.truststore             | SECURITY_TRUSTSTORE               | The path to the truststore | | Yes |
+| security.truststorePassword     | SECURITY_TRUSTSTORE_PASSWORD      | The truststore password | | Yes |
+| topic.claimant                  | TOPIC_CLAIMANT                    | The name of the claimant topic | "db.core.claimant" | |
+| topic.contract                  | TOPIC_CONTRACT                    | The name of the contract topic | "db.core.contract" | |
+| topic.statement                 | TOPIC_STATEMENT                   | The name of the statement topic | "db.core.statement" | |
+| validation.schemaLocation       | VALIDATION_SCHEMA_LOCATION        | The location of the message json schema | "/message.schema.json" | |
+
+
 
 ### SSL Mutual Authentication (CERTGEN mode)
 

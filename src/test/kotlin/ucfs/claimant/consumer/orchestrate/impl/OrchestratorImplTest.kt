@@ -10,8 +10,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
-import ucfs.claimant.consumer.domain.DecryptionResult
 import ucfs.claimant.consumer.domain.SourceRecord
+import ucfs.claimant.consumer.domain.TransformationResult
 import ucfs.claimant.consumer.processor.CompoundProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
@@ -50,7 +50,9 @@ class OrchestratorImplTest : StringSpec() {
 
             val queueRecord = mock<SourceRecord>()
             val processor = mock<CompoundProcessor> {
-                on { process(any()) } doReturn Either.Right(Pair(queueRecord, DecryptionResult(JsonObject(), "DECRYPTED_DB_OBJECT")))
+                on {
+                    process(any())
+                } doReturn Either.Right(Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")))
             }
 
             val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
@@ -88,7 +90,7 @@ class OrchestratorImplTest : StringSpec() {
             val records = (1..100).map { recordNumber ->
                 when {
                     recordNumber % 2 == 0 -> {
-                        Either.Right(Pair(queueRecord, DecryptionResult(JsonObject(), "DECRYPTED_DB_OBJECT")))
+                        Either.Right(Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")))
                     }
                     else -> {
                         Either.Left(consumerRecord(recordNumber))

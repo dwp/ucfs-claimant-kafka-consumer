@@ -15,5 +15,4 @@ venv/
 *.crt
 *.pem
 *.p12
-
 *.jks

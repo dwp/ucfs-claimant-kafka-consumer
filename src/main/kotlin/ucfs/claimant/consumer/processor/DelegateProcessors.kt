@@ -12,3 +12,4 @@ interface JsonProcessor : DelegateProcessor<ValidationProcessingResult, JsonProc
 interface ExtractionProcessor : DelegateProcessor<JsonProcessingResult, ExtractionProcessingOutput>
 interface DatakeyProcessor : DelegateProcessor<ExtractionProcessingResult, DatakeyProcessingOutput>
 interface DecryptionProcessor : DelegateProcessor<DatakeyProcessingResult, DecryptionProcessingOutput>
+interface TransformationProcessor : DelegateProcessor<DecryptionProcessingResult, TransformationProcessingOutput>

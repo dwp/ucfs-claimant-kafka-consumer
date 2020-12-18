@@ -13,13 +13,6 @@ help:
 .PHONY: bootstrap
 bootstrap: ## Bootstrap local environment for first use
 	@make git-hooks
-	pip3 install --user Jinja2 PyYAML boto3
-	@{ \
-		export AWS_PROFILE=default; \
-		export AWS_REGION=eu-west-2; \
-		python3 bootstrap_terraform.py; \
-	}
-	terraform fmt -recursive
 
 .PHONY: git-hooks
 git-hooks: ## Set up hooks in .githooks

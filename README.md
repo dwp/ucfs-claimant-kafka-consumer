@@ -72,7 +72,7 @@ successful processing step.
 * `DecryptionProcessor` - decrypts the `dbObject`
 * `TransformationProcessor` - transforms the decrypted dbObject in line with
     the current batch process, the actual transformation is delegated to an inferior
-  transformer of which there are 3 one for each source topic (as each has a unique transformation 
+  transformer of which there are 3, one for each source topic (as each has a unique transformation 
   applied)
 
 
@@ -96,8 +96,8 @@ variables or a mixture of the two.
 
 | Property                        | Environment variable              | Purpose | Default | Needs override |
 |---------------------------------|-----------------------------------|---------|---------|----------------|
-| aws.cmkAlias                    | AWS_CMK_ALIAS                     | The alias of the master ky in KMS | "alias/ucfs_etl_cmk" | |
-| aws.saltParameterName           | AWS_SALT_PARAMETER_NAME           | The name of the parameter in the parameter store which houses the salt value | "/ucfs/claimant-api/nino/salt" | |
+| aws.cmkAlias                    | AWS_CMK_ALIAS                     | The alias of the master key in KMS |  | Yes |
+| aws.saltParameterName           | AWS_SALT_PARAMETER_NAME           | The name of the parameter in the parameter store which houses the salt value | | Yes |
 | cipher.dataKeySpec              | CIPHER_DATA_KEY_SPEC              | The specification of the datakeys that are generated | "AES_256" | |
 | cipher.decryptingAlgorithm      | CIPHER_DECRYPTING_ALGORITHM       | The cipher algorithm used to decrypt the data keys that encrypted the message dbObjects | "AES" | |
 | cipher.decryptingProvider       | CIPHER_DECRYPTING_PROVIDER        | The provider used to perform the data key decryption | "BC" | |
@@ -134,7 +134,7 @@ variables or a mixture of the two.
 ### SSL Mutual Authentication (CERTGEN mode)
 
 By default the SSL is enabled but has no defaults. These must either be
-configured in full using `K2HB_KAFKA_CERT_MODE=CERTGEN`, or disabled entirely using `K2HB_KAFKA_INSECURE=FALSE`.
+configured in full using `KAFKA_CERT_MODE=CERTGEN`, or disabled entirely using `KAFKA_USE_SSL=FALSE`.
 
 For an authoritative full list of arguments see the tool help; Arguments not listed here are
 defaulted in the `entrypoint.sh` script.
@@ -176,7 +176,7 @@ defaulted in the `entrypoint.sh` script.
 ### SSL Mutual Authentication (RETRIEVE mode)
 
 By default the SSL is enabled but has no defaults. These must either be
-configured in full using `KAFKA_CERT_MODE=RETRIEVE`, or disabled entirely with `KAFKA_INSECURE=FALSE`.
+configured in full using `KAFKA_CERT_MODE=RETRIEVE`, or disabled entirely with `KAFKA_USE_SSL=FALSE`.
 
 For an authoritative full list of arguments see the tool help; Arguments not listed here are
 defaulted in the `entrypoint.sh` script. These env vars will be overwritten by flags given in `entrypoint.sh`.

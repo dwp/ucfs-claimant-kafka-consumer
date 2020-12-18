@@ -57,6 +57,7 @@ dks:
 
 services: kafka rds localstack dks ## Bring up zookeeper, kafka, the database etc.
 
+.PHONY: build
 build: ## Build the container
 	docker-compose build ucfs-claimant-kafka-consumer
 

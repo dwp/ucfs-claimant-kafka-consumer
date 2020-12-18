@@ -16,35 +16,36 @@ fi
 
 # Generate a cert for Kafka mutual auth
 HOSTNAME=$(hostname)
-if [ "${KAFKA_INSECURE}" != "true" ]
+if [ "${KAFKA_USE_SSL}" == "true" ]
 then
 
     SSL_DIR="$(mktemp -d)"
-    export KAFKA_PRIVATE_KEY_PASSWORD="$(uuidgen)"
+    export SECURITY_KEY_PASSWORD="$(uuidgen)"
 
-    export KAFKA_KEYSTORE_PATH="${SSL_DIR}/kafka.keystore"
-    export KAFKA_KEYSTORE_PASSWORD="$(uuidgen)"
+    export SECURITY_KEYSTORE="${SSL_DIR}/kafka.keystore"
+    export SECURITY_KEYSTORE_PASSWORD="$(uuidgen)"
 
-    export KAFKA_TRUSTSTORE_PATH="${SSL_DIR}/kafka.truststore"
-    export KAFKA_TRUSTSTORE_PASSWORD="$(uuidgen)"
+    export SECURITY_TRUSTSTORE="${SSL_DIR}/kafka.truststore"
+    export SECURITY_TRUSTSTORE_PASSWORD="$(uuidgen)"
 
     if [ "${KAFKA_CERT_MODE}" = "CERTGEN" ]; then
+        export SECURITY_KEYSTORE_ALIAS="${CERTGEN_PRIVATE_KEY_ALIAS}"
 
         echo "Generating cert for host ${HOSTNAME}"
 
         acm-pca-cert-generator \
+            --log-level "${LOG_LEVEL}" \
             --subject-cn "${HOSTNAME}" \
-            --keystore-path "${KAFKA_KEYSTORE_PATH}" \
-            --keystore-password "${KAFKA_KEYSTORE_PASSWORD}" \
-            --private-key-password "${KAFKA_PRIVATE_KEY_PASSWORD}" \
-            --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
-            --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
-            --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}"
+            --keystore-path "${SECURITY_KEYSTORE}" \
+            --keystore-password "${SECURITY_KEYSTORE_PASSWORD}" \
+            --private-key-password "${SECURITY_KEY_PASSWORD}" \
+            --truststore-path "${SECURITY_TRUSTSTORE}" \
+            --truststore-password "${SECURITY_TRUSTSTORE_PASSWORD}"
 
         echo "Cert generation result is $? for ${HOSTNAME}"
 
     elif [ "${KAFKA_CERT_MODE}" = "RETRIEVE" ]; then
+        export SECURITY_KEYSTORE_ALIAS="${RETRIEVER_PRIVATE_KEY_ALIAS}"
 
         export RETRIEVER_ACM_KEY_PASSPHRASE="$(uuidgen)"
 
@@ -54,22 +55,15 @@ then
         echo "Retrieving cert from ${RETRIEVER_ACM_CERT_ARN}"
 
         acm-cert-retriever \
+            --log-level "${LOG_LEVEL}" \
             --acm-key-passphrase "${RETRIEVER_ACM_KEY_PASSPHRASE}" \
-            --keystore-path "${KAFKA_KEYSTORE_PATH}" \
-            --keystore-password "${KAFKA_KEYSTORE_PASSWORD}" \
-            --private-key-password "${KAFKA_PRIVATE_KEY_PASSWORD}" \
-            --truststore-path "${KAFKA_TRUSTSTORE_PATH}" \
-            --truststore-password "${KAFKA_TRUSTSTORE_PASSWORD}" \
-            --truststore-aliases "${KAFKA_CONSUMER_TRUSTSTORE_ALIASES}" \
-            --truststore-certs "${KAFKA_CONSUMER_TRUSTSTORE_CERTS}"
+            --keystore-path "${SECURITY_KEYSTORE}" \
+            --keystore-password "${SECURITY_KEYSTORE_PASSWORD}" \
+            --private-key-password "${SECURITY_KEY_PASSWORD}" \
+            --truststore-path "${SECURITY_TRUSTSTORE}" \
+            --truststore-password "${SECURITY_TRUSTSTORE_PASSWORD}"
 
         echo "Cert retrieve result is $? for ${RETRIEVER_ACM_CERT_ARN}"
-
-        export SECURITY_KEY_PASSWORD="${KAFKA_PRIVATE_KEY_PASSWORD}"
-        export SECURITY_KEYSTORE="${KAFKA_KEYSTORE_PATH}"
-        export SECURITY_KEYSTORE_PASSWORD="${KAFKA_KEYSTORE_PASSWORD}"
-        export SECURITY_TRUSTSTORE="${KAFKA_TRUSTSTORE_PATH}"
-        export SECURITY_TRUSTSTORE_PASSWORD="${KAFKA_TRUSTSTORE_PASSWORD}"
 
     else
         echo "KAFKA_CERT_MODE must be one of 'CERTGEN,RETRIEVE' but was ${KAFKA_CERT_MODE}"

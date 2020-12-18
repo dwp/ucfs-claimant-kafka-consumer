@@ -8,7 +8,10 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.kms.KmsClient
+<<<<<<< HEAD
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+=======
+>>>>>>> origin/master
 import software.amazon.awssdk.services.ssm.SsmClient
 import java.net.URI
 
@@ -22,8 +25,11 @@ class LocalstackConfiguration {
     @Bean
     fun localstackSsmClient(): SsmClient = SsmClient.builder().localstack()
 
+<<<<<<< HEAD
     @Bean
     fun localstackSecretsManagerClient(): SecretsManagerClient = SecretsManagerClient.builder().localstack()
+=======
+>>>>>>> origin/master
 
     fun <B: AwsClientBuilder<B, C>?, C> AwsClientBuilder<B, C>.localstack(): C =
         run {

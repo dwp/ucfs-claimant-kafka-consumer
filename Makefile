@@ -31,6 +31,7 @@ rds:
 		done; \
 		sleep 5; \
 	}
+	docker exec -i rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant  < ./containers/rds/create_tables.sql
 
 localstack: ## bring up localstack container and wait for it to be ready
 	docker-compose up -d localstack
@@ -104,8 +105,8 @@ push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 	}
 
-mysql_root: ## Get a client session on the metadatastore database.
-	docker exec -it rds mysql --host=127.0.0.1 --user=root --password=password
+mysql_root: ## Get a root session on the  database.
+	docker exec -it rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant
 
-mysql_user: ## Get a client session on the metadatastore database.
-	docker exec -it rds mysql --host=127.0.0.1 --user=claimantapi --password=password
+mysql_user: ## Get a client session on the database.
+	docker exec -it rds mysql --host=127.0.0.1 --user=claimantapi --password=password ucfs-claimant

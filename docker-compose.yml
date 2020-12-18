@@ -28,7 +28,7 @@ services:
     container_name: rds
     environment:
       MYSQL_ROOT_PASSWORD: "password"
-      MYSQL_DATABASE: "metadatastore"
+      MYSQL_DATABASE: "ucfs-claimant"
       MYSQL_USER: "claimantapi"
       MYSQL_PASSWORD: "password"
 

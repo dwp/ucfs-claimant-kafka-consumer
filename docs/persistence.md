@@ -39,6 +39,7 @@ Update readme docs of application to state what it does
 
 ### Testing
 In dev post messages to Kafka producer.
-    * new messages should be inserted
-    * messages with same id should be updated in DB
-    * query DB using cloud9 or Lambda to confirm
+
+* new messages should be inserted
+* messages with same id should be updated in DB
+* query DB using cloud9 or Lambda to confirm

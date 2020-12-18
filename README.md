@@ -72,7 +72,7 @@ successful processing step.
 * `DecryptionProcessor` - decrypts the `dbObject`
 * `TransformationProcessor` - transforms the decrypted dbObject in line with
     the current batch process, the actual transformation is delegated to an inferior
-  transformer of which there are 3 one for each source topic (as each has a unique transformation 
+  transformer of which there are 3, one for each source topic (as each has a unique transformation 
   applied)
 
 

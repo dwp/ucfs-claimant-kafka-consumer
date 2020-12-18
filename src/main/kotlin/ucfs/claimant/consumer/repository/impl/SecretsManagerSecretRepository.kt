@@ -9,7 +9,8 @@ import ucfs.claimant.consumer.repository.SecretRepository
 import ucfs.claimant.consumer.utility.FunctionalUtility.encase
 
 @Repository
-class SecretsManagerSecretRepository(private val secretsManagerClient: SecretsManagerClient): SecretRepository {
+class SecretsManagerSecretRepository(private val secretsManagerClient: SecretsManagerClient,
+                                     private val rdsPasswordSecretName: String): SecretRepository {
 
     override fun secret(name: String): Either<Throwable, String> =
             encase {
@@ -18,7 +19,7 @@ class SecretsManagerSecretRepository(private val secretsManagerClient: SecretsMa
 
     private fun secretValueRequest(): GetSecretValueRequest =
         with(GetSecretValueRequest.builder()) {
-            secretId("ucfs-claimant-api-db-password")
+            secretId(rdsPasswordSecretName)
             build()
         }
 }

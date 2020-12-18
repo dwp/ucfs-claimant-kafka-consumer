@@ -63,8 +63,9 @@ services:
     depends_on:
       - kafka
     environment:
-      AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       AWS_CMK_ALIAS: alias/ucfs_etl_cmk
+      AWS_RDS_PASSWORD_SECRET_NAME: ucfs-claimant-api-db-password
+      AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       KAFKA_INSECURE: "true"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
       SECURITY_KEY_PASSWORD: changeit

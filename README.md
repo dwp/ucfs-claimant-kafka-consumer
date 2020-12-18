@@ -70,7 +70,7 @@ successful processing step.
       vector generated when encrypting the payload).
 * `DatakeyProcessor` - calls DKS to get the encrypted datakey decrypted.
 * `DecryptionProcessor` - decrypts the `dbObject`
-* `TransformationProcesser` - transforms the decrypted dbObject in line with
+* `TransformationProcessor` - transforms the decrypted dbObject in line with
     the current batch process, the actual transformation is delegated to an inferior
   transformer of which there are 3 one for each source topic (as each has a unique transformation 
   applied)

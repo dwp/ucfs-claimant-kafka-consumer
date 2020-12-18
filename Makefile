@@ -19,7 +19,7 @@ git-hooks: ## Set up hooks in .githooks
 	@git submodule update --init .githooks ; \
 	git config core.hooksPath .githooks \
 
-certificates: ## generate self-signed certificates, keystores for local development.
+certificates: git-hooks ## generate self-signed certificates, keystores for local development.
 	./generate-certificates.sh
 
 localstack: ## bring up localstack container and wait for it to be ready

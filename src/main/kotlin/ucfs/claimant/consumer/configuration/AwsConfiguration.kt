@@ -17,5 +17,5 @@ class AwsConfiguration {
     fun kmsClient(): KmsClient = KmsClient.create()
 
     @Bean
-    fun secretsManagerClient(): SecretsManagerClient =SecretsManagerClient.create()
+    fun secretsManagerClient(): SecretsManagerClient = SecretsManagerClient.create()
 }

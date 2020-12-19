@@ -29,7 +29,6 @@ rds:
 			echo Waiting for rds.; \
 			sleep 2; \
 		done; \
-		sleep 2; \
 	}
 	docker exec -i rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant  < ./containers/rds/create_tables.sql
 

@@ -1,12 +1,10 @@
 package ucfs.claimant.consumer.target.impl
 
 import org.springframework.context.annotation.Profile
-import org.springframework.stereotype.Component
 import ucfs.claimant.consumer.domain.TransformationProcessingResult
 import ucfs.claimant.consumer.target.SuccessTarget
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 
-@Component
 @Profile("!QUEUE_TARGET")
 class ConsoleTarget : SuccessTarget {
 

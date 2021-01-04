@@ -7,8 +7,7 @@ import software.amazon.awssdk.services.ssm.model.GetParameterRequest
 import ucfs.claimant.consumer.repository.SaltRepository
 
 @Repository
-class SsmParameterStoreSaltRepository(private val ssmClient: SsmClient, private val saltParameterName: String):
-    SaltRepository {
+class SsmParameterStoreSaltRepository(private val ssmClient: SsmClient, private val saltParameterName: String): SaltRepository {
 
     @Cacheable("SALT_CACHE")
     override fun salt(): String =

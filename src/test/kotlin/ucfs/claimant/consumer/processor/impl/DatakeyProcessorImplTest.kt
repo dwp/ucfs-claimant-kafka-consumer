@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.processor.impl
 
-import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -23,7 +24,7 @@ class DatakeyProcessorImplTest : StringSpec() {
     init {
         "Returns right if datakey call successful" {
             val datakeyRepository = mock<DecryptingDataKeyRepository> {
-                on { decryptDataKey(encryptingKeyId, encryptedKey) } doReturn Either.Right(decryptedKey)
+                on { decryptDataKey(encryptingKeyId, encryptedKey) } doReturn decryptedKey.right()
             }
             val processor = DataKeyProcessorImpl(datakeyRepository)
             val input = encryptionExtractionResult()
@@ -39,7 +40,7 @@ class DatakeyProcessorImplTest : StringSpec() {
             val datakeyRepository = mock<DecryptingDataKeyRepository> {
                 on {
                     decryptDataKey(encryptingKeyId, encryptedKey)
-                } doReturn Either.Left(Pair(returnCode, Pair(encryptingKeyId, encryptedKey)))
+                } doReturn Pair(returnCode, Pair(encryptingKeyId, encryptedKey)).left()
             }
             val processor = DataKeyProcessorImpl(datakeyRepository)
             val input = encryptionExtractionResult()

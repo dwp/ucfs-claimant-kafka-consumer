@@ -1,6 +1,6 @@
 package ucfs.claimant.consumer.repository.impl
 
-import arrow.core.Either
+import arrow.core.left
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.ContentType
 import org.apache.http.entity.StringEntity
@@ -48,7 +48,7 @@ class DecryptingDataKeyRepositoryImpl(private val httpClientProvider: HttpClient
                     400 -> {
                         logger.error("DKS key decryption error", "status_code" to "${response.statusLine.statusCode}",
                                 "encrypted_key" to encryptedKey, "encrypting_key_id" to encryptingKeyId, "correlation_id" to correlationId)
-                        Either.Left(Pair(response.statusLine.statusCode, Pair(encryptingKeyId, encryptedKey)))
+                        Pair(response.statusLine.statusCode, Pair(encryptingKeyId, encryptedKey)).left()
                     }
                     else -> {
                         logger.error("DKS service error", "status_code" to "${response.statusLine.statusCode}",

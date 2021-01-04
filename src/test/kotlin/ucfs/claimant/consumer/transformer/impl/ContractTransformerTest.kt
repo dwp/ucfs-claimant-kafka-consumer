@@ -1,5 +1,6 @@
 package ucfs.claimant.consumer.transformer.impl
 
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
@@ -44,7 +45,7 @@ class ContractTransformerTest: StringSpec() {
 
     companion object {
 
-        private fun transform(json: String) = ContractTransformer().transform(json)
+        private fun transform(json: String) = ContractTransformer().transform(Gson().fromJson(json, JsonObject::class.java))
 
         private fun validateLeft(json: String, field: String) {
             transform(json) shouldBeLeft {

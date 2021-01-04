@@ -16,9 +16,9 @@ data class RdsProperties(var endpoint: String = "rds",
                          var claimantTable: String = "claimant",
                          var contractTable: String = "contract",
                          var statementTable: String = "statement",
-                         var claimantSourceId: String = "citizen_id",
-                         var contractSourceId: String = "contract_id",
-                         var statementSourceId: String = "statement_id") {
+                         var claimantNaturalId: String = "citizen_id",
+                         var contractNaturalId: String = "contract_id",
+                         var statementNaturalId: String = "statement_id") {
 
     @Bean
     fun databaseEndpoint() = endpoint
@@ -39,13 +39,13 @@ data class RdsProperties(var endpoint: String = "rds",
     fun databaseCaCertPath() = caCertPath
 
     @Bean
-    @Qualifier("sourceIds")
-    fun sourceIds(claimantSourceTopic: String, contractSourceTopic: String, statementSourceTopic: String): Map<String, String> =
-        mapOf(claimantSourceTopic to claimantSourceId, contractSourceTopic to contractSourceId, statementSourceTopic to statementSourceId)
+    @Qualifier("naturalIds")
+    fun naturalIds(claimantTopic: String, contractTopic: String, statementTopic: String): Map<String, String> =
+        mapOf(claimantTopic to claimantNaturalId, contractTopic to contractNaturalId, statementTopic to statementNaturalId)
 
     @Bean
     @Qualifier("targetTables")
-    fun targetTables(claimantSourceTopic: String, contractSourceTopic: String, statementSourceTopic: String): Map<String, String> =
-        mapOf(claimantSourceTopic to claimantTable, contractSourceTopic to contractTable, statementSourceTopic to statementTable)
+    fun targetTables(claimantTopic: String, contractTopic: String, statementTopic: String): Map<String, String> =
+        mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
 }
 

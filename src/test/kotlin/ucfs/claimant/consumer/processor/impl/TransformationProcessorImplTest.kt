@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.processor.impl
 
-import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -93,12 +94,12 @@ class TransformationProcessorImplTest: StringSpec() {
     companion object {
         fun succeedingTransformer(result: String): Transformer =
             mock {
-                on { transform(any()) } doReturn Either.Right(result)
+                on { transform(any()) } doReturn result.right()
             }
 
         fun failingTransformer(result: String): Transformer =
             mock {
-                on { transform(any()) } doReturn Either.Left(result)
+                on { transform(any()) } doReturn result.left()
             }
 
         private const val claimantSourceTopic: String = "db.core.claimant"
@@ -109,6 +110,6 @@ class TransformationProcessorImplTest: StringSpec() {
         private const val statementResult: String = "statement"
         private const val inputJson: String = """{ "key": "value" }"""
         private val jsonObject = Gson().fromJson(inputJson, JsonObject::class.java)
-        private val decryptionResult = DecryptionResult(jsonObject, "plaintext")
+        private val decryptionResult = DecryptionResult(jsonObject, inputJson)
     }
 }

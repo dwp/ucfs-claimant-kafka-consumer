@@ -2,6 +2,8 @@ package ucfs.claimant.consumer.utility
 
 import arrow.core.Either
 import arrow.core.flatMap
+import arrow.core.left
+import arrow.core.right
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -29,12 +31,12 @@ object GsonExtensions {
 
     fun JsonObject.getObject(vararg path: String): Either<Pair<JsonObject, String>, JsonObject> =
             when (path.size) {
-                1 -> get(path[0])?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { Either.Right(it) } ?: run {
+                1 -> get(path[0])?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { it.right() } ?: run {
                     logger.error(
                         "Failed to extract descendant object",
                         "path" to path.joinToString("/")
                     )
-                    Either.Left(Pair(this, path.joinToString()))
+                    Pair(this, path.joinToString()).left()
                 }
                 else -> getChildObject(path[0]).flatMap { it.getObject(*path.sliceArray(1 until path.size)) }
             }
@@ -50,11 +52,11 @@ object GsonExtensions {
                 encase { f() }.mapLeft {
                     logger.error("Failed to parse descendant array", it,
                         "path" to path.joinToString("/"))
-                    Either.Left(Pair(this, path.joinToString()))
+                    Pair(this, path.joinToString()).left()
                 }
             } ?: run {
                 logger.error("Failed to extract descendant array","path" to path.joinToString("/"))
-                Either.Left(Pair(this, path.joinToString()))
+                Pair(this, path.joinToString()).left()
             }) as Either<Pair<JsonObject, String>, List<T>>
 
             else -> getChildObject(path[0]).flatMap {
@@ -77,19 +79,19 @@ object GsonExtensions {
             1 -> get(path[0])?.
                 takeIf(JsonElement::isJsonPrimitive)?.asJsonPrimitive?.
                 takeIf(predicate)?.run(extractor)?.
-                let { Either.Right(it) }
+                let { it.right() }
                     ?:
                 run {
                     logger.error("Failed to extract descendant primitive","path" to path.joinToString("/"))
-                    Either.Left(Pair(this, path.joinToString()))
+                    Pair(this, path.joinToString()).left()
                 }
             else -> getChildObject(path[0]).flatMap { it.primitive(predicate, extractor, *path.sliceArray(1 until path.size)) }
         }
 
     private fun JsonObject.getChildObject(childName: String): Either<Pair<JsonObject, String>, JsonObject> =
-            get(childName)?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { Either.Right(it) } ?: run {
+            get(childName)?.takeIf(JsonElement::isJsonObject)?.asJsonObject?.let { it.right() } ?: run {
                 logger.error("Failed to extract child object from parent", "child_name" to childName)
-                Either.Left(Pair(this, childName))
+                Pair(this, childName).left()
             }
 
     private val logger = DataworksLogger.getLogger(GsonExtensions::class)

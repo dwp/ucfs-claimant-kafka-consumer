@@ -10,18 +10,19 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import ucfs.claimant.consumer.repository.SaltRepository
+import ucfs.claimant.consumer.transformer.impl.GsonTestUtility.jsonObject
 import ucfs.claimant.consumer.utility.GsonExtensions.json
 
 class ClaimantTransformerTest: StringSpec() {
     init {
         "Transforms valid json" {
-            transformer().transform(validJson) shouldBeRight {
+            transformer().transform(jsonObject(validJson)) shouldBeRight {
                 it shouldMatchJson expectedOutput
             }
         }
 
         "Returns left if nino missing" {
-            transformer().transform(invalidJsonMissingNino) shouldBeLeft {
+            transformer().transform(jsonObject(invalidJsonMissingNino)) shouldBeLeft {
                 it.shouldBeTypeOf<Pair<JsonObject, String>>()
                 it.first.json() shouldMatchJson invalidJsonMissingNino
                 it.second shouldBe "nino"
@@ -29,7 +30,7 @@ class ClaimantTransformerTest: StringSpec() {
         }
 
         "Returns left if _id missing" {
-            transformer().transform(invalidJsonMissingId) shouldBeLeft {
+            transformer().transform(jsonObject(invalidJsonMissingId)) shouldBeLeft {
                 it.shouldBeTypeOf<Pair<JsonObject, String>>()
                 it.first.json() shouldMatchJson invalidJsonMissingId
                 it.second shouldBe "_id"
@@ -37,7 +38,7 @@ class ClaimantTransformerTest: StringSpec() {
         }
 
         "Returns left if everything missing" {
-            transformer().transform(invalidJsonMissingEverything) shouldBeLeft {
+            transformer().transform(jsonObject(invalidJsonMissingEverything)) shouldBeLeft {
                 it.shouldBeTypeOf<Pair<JsonObject, String>>()
                 it.first.json() shouldMatchJson invalidJsonMissingEverything
                 it.second shouldBe "_id"
@@ -46,6 +47,7 @@ class ClaimantTransformerTest: StringSpec() {
     }
 
     companion object {
+
 
         private const val validJson =
             """{

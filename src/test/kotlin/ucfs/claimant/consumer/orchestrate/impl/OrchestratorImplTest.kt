@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
-import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.assertions.throwables.shouldThrow
@@ -52,7 +53,7 @@ class OrchestratorImplTest : StringSpec() {
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
-                } doReturn Either.Right(Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")))
+                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
             }
 
             val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
@@ -90,10 +91,10 @@ class OrchestratorImplTest : StringSpec() {
             val records = (1..100).map { recordNumber ->
                 when {
                     recordNumber % 2 == 0 -> {
-                        Either.Right(Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")))
+                        Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
                     }
                     else -> {
-                        Either.Left(consumerRecord(recordNumber))
+                        consumerRecord(recordNumber).left()
                     }
                 }
             }

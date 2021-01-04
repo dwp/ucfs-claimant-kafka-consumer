@@ -11,25 +11,25 @@ import javax.sql.DataSource
 @Profile("!QUEUE_TARGET")
 class RdsTarget(private val dataSource: DataSource,
                 @Qualifier("targetTables") private val targetTables: Map<String, String>,
-                @Qualifier("sourceIds") private val sourceIds: Map<String, String>): SuccessTarget {
+                @Qualifier("naturalIds") private val naturalIds: Map<String, String>): SuccessTarget {
 
     override suspend fun send(topic: String, records: List<TransformationProcessingResult>) {
         dataSource.connection.use { connection ->
-            val sql = upsertSql(topic)
-            records.forEach { (_, wtf) ->
-                val (_, result) = wtf
-                println("===============================================================")
-                println(connection)
-                println(result)
-                println(sql)
-                println(targetTables)
-                println(sourceIds)
-                println("===============================================================")
+            connection.prepareStatement(upsertSql(topic)).use { statement ->
+                records.forEach { (_, wtf) ->
+                    val (_, result) = wtf
+                    println("===============================================================")
+                    println(connection)
+                    println(result)
+                    println(targetTables)
+                    println(naturalIds)
+                    println("===============================================================")
+                }
             }
         }
     }
 
 
     fun upsertSql(topic: String): String =
-        """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ? WHERE ${sourceIds[topic]} = ?"""
+        """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ? WHERE ${naturalIds[topic]} = ?"""
 }

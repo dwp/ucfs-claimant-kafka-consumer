@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.processor.impl
 
-import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
@@ -22,7 +23,7 @@ class DecryptionProcessorImplTest : StringSpec() {
             val cipherService = mock<DecryptionService> {
                 on {
                     decrypt(datakey, initialisationVector, encryptedDbObject)
-                } doReturn Either.Right(decryptedDbObject)
+                } doReturn decryptedDbObject.right()
             }
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
             val json = json()
@@ -38,7 +39,7 @@ class DecryptionProcessorImplTest : StringSpec() {
         "Returns left on failure" {
             val left = Exception("Failed to decrypt")
             val cipherService = mock<DecryptionService> {
-                on { decrypt(datakey, initialisationVector, encryptedDbObject) } doReturn Either.Left(left)
+                on { decrypt(datakey, initialisationVector, encryptedDbObject) } doReturn left.left()
             }
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
             val json = json()

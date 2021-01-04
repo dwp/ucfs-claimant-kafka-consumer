@@ -15,22 +15,23 @@ class RdsTarget(private val dataSource: DataSource,
 
     override suspend fun send(topic: String, records: List<TransformationProcessingResult>) {
         dataSource.connection.use { connection ->
-            connection.prepareStatement(upsertSql(topic)).use { statement ->
-                records.forEach { (_, wtf) ->
-                    val (_, result, naturalId) = wtf
-                    println("===============================================================")
-                    println(connection)
-                    println(result)
-                    println(naturalId)
-                    println(targetTables)
-                    println(naturalIds)
-                    println("===============================================================")
+            println("SQL: '${upsertSql(topic)}'")
+            try {
+                connection.prepareStatement(upsertSql(topic)).use { statement ->
+                    records.forEach { (_, transformationResult) ->
+                        statement.setString(1, transformationResult.transformedDbObject)
+                        statement.setString(2, transformationResult.transformedDbObject)
+                        statement.addBatch()
+                    }
+                    statement.executeBatch()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
 
     fun upsertSql(topic: String): String =
-        """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ? WHERE ${naturalIds[topic]} = ?"""
+        """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?"""
 }

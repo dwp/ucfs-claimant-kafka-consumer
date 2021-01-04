@@ -1,7 +1,6 @@
 package ucfs.claimant.consumer.processor.impl
 
-import arrow.core.left
-import arrow.core.right
+import arrow.core.rightIfNotNull
 import org.springframework.stereotype.Component
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.processor.SourceRecordProcessor
@@ -12,11 +11,11 @@ import uk.gov.dwp.dataworks.logging.DataworksLogger
 class SourceRecordProcessorImpl : SourceRecordProcessor {
 
     override fun process(record: SourceRecord) =
-            record.value()?.let { body ->
-                Pair(record, String(body)).right()
-            } ?: run {
+            record.value().rightIfNotNull {
                 logger.logFailedProcessingStep("Failed to get message value", record, "Value returned null")
-                record.left()
+                record
+            }.map { body ->
+                Pair(record, String(body))
             }
 
     companion object {

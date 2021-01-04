@@ -36,7 +36,7 @@ data class CipherServiceEncryptionResult(val encryptingKeyId: String, val initia
                                          val encryptedDataKey: String, val cipherText: String)
 
 data class DecryptionResult(val json: JsonObject, val plainText: String)
-data class TransformationResult(val json: JsonObject, val transformedDbObject: String, val naturalId: String)
+data class TransformationResult(val json: JsonObject, val transformedDbObject: String)
 
 typealias DecryptionData = Either<Any, String>
 typealias CipherServiceEncryptionData = Either<Throwable, CipherServiceEncryptionResult>

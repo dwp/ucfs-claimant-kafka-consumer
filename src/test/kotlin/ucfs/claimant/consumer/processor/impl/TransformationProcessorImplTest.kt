@@ -81,13 +81,13 @@ class TransformationProcessorImplTest: StringSpec() {
             TransformationProcessorImpl(
                 mapOf(claimantSourceTopic to succeedingTransformer(claimantResult),
                       contractSourceTopic to succeedingTransformer(contractResult),
-                      statementSourceTopic to succeedingTransformer(statementResult)), idFields)
+                      statementSourceTopic to succeedingTransformer(statementResult)))
 
         private fun failingProcessor(): TransformationProcessor =
             TransformationProcessorImpl(
                 mapOf(claimantSourceTopic to failingTransformer(claimantResult),
                       contractSourceTopic to failingTransformer(contractResult),
-                      statementSourceTopic to failingTransformer(statementResult)), idFields)
+                      statementSourceTopic to failingTransformer(statementResult)))
 
         private fun succeedingTransformer(result: String): Transformer =
             mock {
@@ -102,15 +102,11 @@ class TransformationProcessorImplTest: StringSpec() {
         private const val claimantSourceTopic: String = "db.core.claimant"
         private const val contractSourceTopic: String = "db.core.contract"
         private const val statementSourceTopic: String = "db.core.statement"
-        private const val idField: String = "id"
         private const val claimantResult: String = "claimant"
         private const val contractResult: String = "contract"
         private const val statementResult: String = "statement"
         private const val inputJson: String = """{ "key": "value" }"""
         private val jsonObject = Gson().fromJson(inputJson, JsonObject::class.java)
         private val decryptionResult = DecryptionResult(jsonObject, """{ "_id": { "id": "123"} }""")
-        private val idFields = mapOf(claimantSourceTopic to idField,
-                                    contractSourceTopic to idField,
-                                    statementSourceTopic to idField)
     }
 }

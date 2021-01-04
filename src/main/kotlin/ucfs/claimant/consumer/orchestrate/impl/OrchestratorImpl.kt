@@ -56,7 +56,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
         try {
             val (successes, failures) =
                     records.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
-//            failureTarget.send(failures.mapNotNull { it.swap().orNull() })
+            failureTarget.send(failures.mapNotNull { it.swap().orNull() })
             successTarget.send(topicPartition.topic(), successes.mapNotNull(TransformationProcessingOutput::orNull))
             lastPosition(records).let { lastPosition ->
                 logger.info("Processed batch, committing offset",
@@ -93,6 +93,6 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
 
     companion object {
         private val logger = DataworksLogger.getLogger(OrchestratorImpl::class)
-        private val closed: AtomicBoolean = AtomicBoolean(false)
+        private val closed = AtomicBoolean(false)
     }
 }

@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.configuration
 
 import org.apache.commons.dbcp2.BasicDataSource
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ucfs.claimant.consumer.repository.SecretRepository
@@ -15,7 +16,13 @@ class RdsConfiguration(private val secretRepository: SecretRepository,
                        private val databaseName: String,
                        private val databaseUser: String,
                        private val databasePasswordSecretName: String,
-                       private val databaseCaCertPath: String) {
+                       private val databaseCaCertPath: String,
+                       private val claimantTable: String,
+                       private val contractTable: String,
+                       private val statementTable: String,
+                       private val claimantTopic: String,
+                       private val contractTopic: String,
+                       private val statementTopic: String,) {
 
     @ExperimentalTime
     @Bean
@@ -30,4 +37,10 @@ class RdsConfiguration(private val secretRepository: SecretRepository,
                 addConnectionProperty("ssl_verify_cert", "true")
             }
         }
+
+    @Bean
+    @Qualifier("targetTables")
+    fun targetTables(): Map<String, String> =
+        mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
+
 }

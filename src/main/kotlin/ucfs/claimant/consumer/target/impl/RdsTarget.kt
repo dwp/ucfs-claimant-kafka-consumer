@@ -17,10 +17,11 @@ class RdsTarget(private val dataSource: DataSource,
         dataSource.connection.use { connection ->
             connection.prepareStatement(upsertSql(topic)).use { statement ->
                 records.forEach { (_, wtf) ->
-                    val (_, result) = wtf
+                    val (_, result, naturalId) = wtf
                     println("===============================================================")
                     println(connection)
                     println(result)
+                    println(naturalId)
                     println(targetTables)
                     println(naturalIds)
                     println("===============================================================")

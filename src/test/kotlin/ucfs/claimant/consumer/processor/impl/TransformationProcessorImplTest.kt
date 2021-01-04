@@ -73,31 +73,28 @@ class TransformationProcessorImplTest: StringSpec() {
             on { key() } doReturn topic.toByteArray()
         }
 
-    private fun succeedingProcessor(): TransformationProcessor =
-            TransformationProcessorImpl(
-                succeedingTransformer(claimantResult),
-                succeedingTransformer(contractResult),
-                succeedingTransformer(statementResult),
-                claimantSourceTopic,
-                contractSourceTopic,
-                statementSourceTopic)
 
-    private fun failingProcessor(): TransformationProcessor =
-        TransformationProcessorImpl(
-            failingTransformer(claimantResult),
-            failingTransformer(contractResult),
-            failingTransformer(statementResult),
-            claimantSourceTopic,
-            contractSourceTopic,
-            statementSourceTopic)
 
     companion object {
-        fun succeedingTransformer(result: String): Transformer =
+
+        private fun succeedingProcessor(): TransformationProcessor =
+            TransformationProcessorImpl(
+                mapOf(claimantSourceTopic to succeedingTransformer(claimantResult),
+                      contractSourceTopic to succeedingTransformer(contractResult),
+                      statementSourceTopic to succeedingTransformer(statementResult)), idFields)
+
+        private fun failingProcessor(): TransformationProcessor =
+            TransformationProcessorImpl(
+                mapOf(claimantSourceTopic to failingTransformer(claimantResult),
+                      contractSourceTopic to failingTransformer(contractResult),
+                      statementSourceTopic to failingTransformer(statementResult)), idFields)
+
+        private fun succeedingTransformer(result: String): Transformer =
             mock {
                 on { transform(any()) } doReturn result.right()
             }
 
-        fun failingTransformer(result: String): Transformer =
+        private fun failingTransformer(result: String): Transformer =
             mock {
                 on { transform(any()) } doReturn result.left()
             }
@@ -105,11 +102,15 @@ class TransformationProcessorImplTest: StringSpec() {
         private const val claimantSourceTopic: String = "db.core.claimant"
         private const val contractSourceTopic: String = "db.core.contract"
         private const val statementSourceTopic: String = "db.core.statement"
+        private const val idField: String = "id"
         private const val claimantResult: String = "claimant"
         private const val contractResult: String = "contract"
         private const val statementResult: String = "statement"
         private const val inputJson: String = """{ "key": "value" }"""
         private val jsonObject = Gson().fromJson(inputJson, JsonObject::class.java)
-        private val decryptionResult = DecryptionResult(jsonObject, inputJson)
+        private val decryptionResult = DecryptionResult(jsonObject, """{ "_id": { "id": "123"} }""")
+        private val idFields = mapOf(claimantSourceTopic to idField,
+                                    contractSourceTopic to idField,
+                                    statementSourceTopic to idField)
     }
 }

@@ -40,7 +40,7 @@ def step_impl(context, count, state, topic):
             "@type": "string",
             "message": {
                 "@type": "string",
-                "_id": {"id": i},
+                "_id": {id_field(topic): i},
                 "_lastModifiedDateTime": "2019-07-04T07:27:35.104+0000",
                 "db": "database",
                 "collection": "collection",
@@ -168,7 +168,7 @@ def bootstrap_server():
 def claimant_db_object(record_number: int):
     return {
         "_id": {
-            "id": f"{record_number}"
+            "citizenId": f"{record_number}"
         },
         "nino": "AA123456A"
     }
@@ -177,7 +177,7 @@ def claimant_db_object(record_number: int):
 def contract_db_object(record_number: int):
     return {
         "_id": {
-            "id": f"{record_number}"
+            "contractId": f"{record_number}"
         },
         "assessmentPeriods": [],
         "people": ["abc", "def"],
@@ -206,7 +206,7 @@ def contract_db_object(record_number: int):
 def statement_db_object(record_number: int):
     return {
         "_id": {
-            "id": f"{record_number}"
+            "statementId": f"{record_number}"
         },
         "_version": 1,
         "people": ["person1", "person2"],
@@ -264,3 +264,8 @@ def statement_db_object(record_number: int):
         "gracePeriodEndDate": None,
         "landlordPayment": "0"
     }
+
+
+def id_field(topic: str) -> str:
+    id_fields = {"db.core.claimant": "citizenId", "db.core.contract": "contractId", "db.core.statement": "statementId"}
+    return id_fields[topic]

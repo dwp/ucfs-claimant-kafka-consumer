@@ -61,7 +61,7 @@ def step_impl(context, count, state, topic):
             "unitOfWorkId": "string",
             "@type": "string",
             "message": {
-                "@type": "string",
+                "@type": "MONGO_INSERT",
                 "_id": {id_field(topic): i},
                 "_lastModifiedDateTime": "2019-07-04T07:27:35.104+0000",
                 "db": "database",
@@ -111,6 +111,7 @@ def step_impl(context, expected, table):
         contents_cursor = connection.cursor()
         contents_cursor.execute(f"SELECT {overwritten_field(table)} FROM {table}")
         for data in contents_cursor:
+            print(data[0], overwritten_value(table))
             assert data[0] == overwritten_value(table)
 
 

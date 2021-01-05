@@ -53,7 +53,7 @@ class OrchestratorImplTest : StringSpec() {
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
-                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
+                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
             }
 
             val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
@@ -91,7 +91,7 @@ class OrchestratorImplTest : StringSpec() {
             val records = (1..100).map { recordNumber ->
                 when {
                     recordNumber % 2 == 0 -> {
-                        Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
+                        Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
                     }
                     else -> {
                         consumerRecord(recordNumber).left()

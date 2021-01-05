@@ -51,9 +51,10 @@ class TransformationProcessorImplTest: StringSpec() {
         val sourceRecord = sourceRecord(sourceTopic)
         succeedingProcessor().process(decryptionResult(sourceRecord)) shouldBeRight { (consumerRecord, transformed) ->
             consumerRecord shouldBeSameInstanceAs sourceRecord
-            val (outputJson, transformedDbObject) = transformed
+            val (outputJson, transformedDbObject, action) = transformed
             outputJson.json() shouldMatchJson inputJson
             transformedDbObject shouldBe result
+            action shouldBe "MONGO_INSERT"
         }
     }
 
@@ -73,10 +74,7 @@ class TransformationProcessorImplTest: StringSpec() {
             on { key() } doReturn topic.toByteArray()
         }
 
-
-
     companion object {
-
         private fun succeedingProcessor(): TransformationProcessor =
             TransformationProcessorImpl(
                 mapOf(claimantSourceTopic to succeedingTransformer(claimantResult),
@@ -105,7 +103,7 @@ class TransformationProcessorImplTest: StringSpec() {
         private const val claimantResult: String = "claimant"
         private const val contractResult: String = "contract"
         private const val statementResult: String = "statement"
-        private const val inputJson: String = """{ "key": "value" }"""
+        private const val inputJson: String = """{ "message": { "@type": "MONGO_INSERT" } }"""
         private val jsonObject = Gson().fromJson(inputJson, JsonObject::class.java)
         private val decryptionResult = DecryptionResult(jsonObject, """{ "_id": { "id": "123"} }""")
     }

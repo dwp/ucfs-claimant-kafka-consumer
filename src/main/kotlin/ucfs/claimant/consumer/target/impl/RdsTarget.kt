@@ -12,9 +12,7 @@ class RdsTarget(private val dataSource: DataSource,
 
     override suspend fun send(topic: String, records: List<TransformationProcessingResult>) {
         dataSource.connection.use { connection ->
-
             val (addsMods, _) = records.partition { it.second.action != DELETE_ACTION }
-
             connection.prepareStatement(upsertSql(topic)).use { statement ->
                 addsMods.forEach { (_, transformationResult) ->
                     statement.setString(1, transformationResult.transformedDbObject)
@@ -27,7 +25,7 @@ class RdsTarget(private val dataSource: DataSource,
     }
 
 
-    fun upsertSql(topic: String): String =
+    private fun upsertSql(topic: String): String =
         """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?"""
 
     companion object {

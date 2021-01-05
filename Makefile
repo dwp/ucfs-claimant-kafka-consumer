@@ -69,12 +69,6 @@ build-tests:
 tests: up ## Run the integration tests without rebuilding the tests
 	docker-compose up ucfs-claimant-kafka-consumer-tests
 
-integration-all-github: certificates up tests ## Run the integration tests
-
-integration-all-local: delete-topics integration-all-github ## Run the integration tests with fresh topics
-
-integration-all-with-reset: destroy certificates build-tests up tests ## Run the integration tests on a fresh stack
-
 down: ## Bring down all containers
 	docker-compose down
 
@@ -92,11 +86,14 @@ delete-topics: ## Clear the integration test queue.
 	make delete-topic topic="db.core.claimant"
 	make delete-topic topic="db.core.contract"
 	make delete-topic topic="db.core.statement"
-	make delete-topic topic="db.core.claimant.success"
-	make delete-topic topic="db.core.contract.success"
-	make delete-topic topic="db.core.statement.success"
 	make delete-topic topic="dead.letter.queue"
 	make list-topics
+
+truncate-tables:
+	docker exec -i rds mysql --user=claimantapi --password=password ucfs-claimant <<< \
+		"truncate claimant; truncate contract; truncate statement"
+
+clear-data: truncate-tables delete-topics
 
 push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 	@{ \
@@ -109,4 +106,4 @@ mysql_root: ## Get a root session on the  database.
 	docker exec -it rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant
 
 mysql_user: ## Get a client session on the database.
-	docker exec -it rds mysql --host=127.0.0.1 --user=claimantapi --password=password ucfs-claimant
+	docker exec -it rds mysql --user=claimantapi --password=password ucfs-claimant

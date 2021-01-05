@@ -14,18 +14,13 @@ class RdsTarget(private val dataSource: DataSource,
 
     override suspend fun send(topic: String, records: List<TransformationProcessingResult>) {
         dataSource.connection.use { connection ->
-            println("SQL: '${upsertSql(topic)}'")
-            try {
-                connection.prepareStatement(upsertSql(topic)).use { statement ->
-                    records.forEach { (_, transformationResult) ->
-                        statement.setString(1, transformationResult.transformedDbObject)
-                        statement.setString(2, transformationResult.transformedDbObject)
-                        statement.addBatch()
-                    }
-                    statement.executeBatch()
+            connection.prepareStatement(upsertSql(topic)).use { statement ->
+                records.forEach { (_, transformationResult) ->
+                    statement.setString(1, transformationResult.transformedDbObject)
+                    statement.setString(2, transformationResult.transformedDbObject)
+                    statement.addBatch()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                statement.executeBatch()
             }
         }
     }

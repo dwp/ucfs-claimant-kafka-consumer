@@ -6,15 +6,17 @@ import org.springframework.context.annotation.Configuration
 import ucfs.claimant.consumer.transformer.Transformer
 
 @Configuration
-class TransformerConfiguration(val claimantTopic: String,
-                               val contractTopic: String,
-                               val statementTopic: String,
-                               val claimantTransformer: Transformer,
-                               val contractTransformer: Transformer,
-                               val statementTransformer: Transformer) {
+class TransformerConfiguration() {
 
     @Bean
     @Qualifier("transformers")
-    fun transformers() =
-        mapOf(claimantTopic to claimantTransformer, contractTopic to contractTransformer, statementTopic to statementTransformer)
+    fun transformers(claimantTopic: String,
+                     contractTopic: String,
+                     statementTopic: String,
+                     claimantTransformer: Transformer,
+                     contractTransformer: Transformer,
+                     statementTransformer: Transformer) =
+        mapOf(claimantTopic to claimantTransformer,
+            contractTopic to contractTransformer,
+            statementTopic to statementTransformer)
 }

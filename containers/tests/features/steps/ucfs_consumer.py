@@ -3,12 +3,22 @@ import binascii
 import json
 import requests
 import time
+import parse
 
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-from behave import given, then
+from behave import given, then, step, register_type
 from kafka import KafkaProducer, KafkaConsumer, TopicPartition
+import mysql.connector
+
+
+@parse.with_pattern(r"\d+")
+def parse_number(text):
+    return int(text)
+
+
+register_type(Number=parse_number)
 
 
 @given("a data key has been acquired")
@@ -20,12 +30,24 @@ def step_impl(context):
     context.dks = response.json()
 
 
-@given("{count} {state} messages have been posted to {topic}")
+@step("{count:Number} records exist on {table}")
+def step_impl(context, count, table):
+    with (mysql.connector.connect(host="rds", user="claimantapi", password="password",
+                                  database="ucfs-claimant")) as connection:
+        data = [(extant_record(table, index),) for index in range(0, count * 2, 2)]
+        statement = f"INSERT INTO {table} (data) VALUES (%s) ON DUPLICATE KEY UPDATE data = VALUES (data)"
+        cursor = connection.cursor()
+        cursor.executemany(statement, data)
+        cursor.close()
+        connection.commit()
+
+
+@given("{count:Number} {state} messages have been posted to {topic}")
 def step_impl(context, count, state, topic):
     data_key = context.dks["plaintextDataKey"]
     producer = KafkaProducer(bootstrap_servers=bootstrap_server())
 
-    for i in range(int(count)):
+    for i in range(count):
 
         db_object = topic_db_object(i, topic)
 
@@ -57,59 +79,66 @@ def step_impl(context, count, state, topic):
 
         value = json.dumps(payload)
         producer.send(topic=topic, value=value.encode(), key=f"{i}".encode())
-        print(f"Sent to {topic}: {value}")
 
     producer.close()
 
 
-def topic_db_object(i, topic):
-    if topic == "db.core.claimant":
-        return claimant_db_object(i)
-    return contract_db_object(i) if topic == "db.core.contract" else statement_db_object(i)
-
-
-@then("{topic} offset will be committed at {offset}")
+@then("{topic} offset will be committed at {offset:Number}")
 def step_impl(context, topic, offset):
     consumer = KafkaConsumer(bootstrap_servers=bootstrap_server(), group_id="ucfs-claimant-consumers",
                              enable_auto_commit=False)
     topic_partition = TopicPartition(topic=topic, partition=0)
-    assert_committed_offset(consumer, topic_partition, int(offset))
+    assert_committed_offset(consumer, topic_partition, offset)
     consumer.close()
 
 
-@then("{count} {topic} messages have been decrypted")
-def step_impl(context, count, topic):
-    consumer = subscribed_consumer(f"{topic}.success")
-    assert_encrypted_messages(consumer, int(count))
-    consumer.close()
-
-
-@then("{count} messages will be sent to {topic} starting from offset {offset}")
+@then("{count:Number} messages will be sent to {topic} starting from offset {offset:Number}")
 def step_impl(context, count, topic, offset):
-    consumer = subscribed_consumer(topic, int(offset))
-    assert_messages_on_queue(consumer, int(count))
+    consumer = subscribed_consumer(topic, offset)
+    assert_messages_on_queue(consumer, count)
 
 
-def assert_encrypted_messages(consumer, count, accumulation=0):
-    print("Polling")
-    records = consumer.poll(timeout_ms=20_000, max_records=10_000)
-    print(f"Polled, {len(records)} retrieved")
-    if len(records) > 0:
-        record_values = [x.value.decode() for x in [value for value in list(records.values())][0]]
-        for index, actual in enumerate(record_values):
-            json_object = json.loads(actual)
-            assert '_id' in json_object
-            actual_id = json_object['_id']
-            expected_id = {"id": f"{index * 2}"}
-            assert actual_id == expected_id
-        accumulation += len(record_values)
-        if accumulation >= count:
-            assert accumulation == count
-            return
+@step("{expected:Number} decrypted records will be on {table}")
+def step_impl(context, expected, table):
+    with (mysql.connector.connect(host="rds", user="claimantapi", password="password",
+                                  database="ucfs-claimant")) as connection:
+        count_cursor = connection.cursor()
+        count_cursor.execute(f"SELECT count(*) FROM {table}")
+        actual = count_cursor.fetchone()[0]
+        assert expected == actual
+        count_cursor.close()
 
-    print("Not all records returned, recursing")
-    time.sleep(1)
-    return assert_encrypted_messages(consumer, count, accumulation)
+        contents_cursor = connection.cursor()
+        contents_cursor.execute(f"SELECT {overwritten_field(table)} FROM {table}")
+        for data in contents_cursor:
+            assert data[0] == overwritten_value(table)
+
+
+def extant_record(table: str, index: int) -> str:
+    if table == "claimant":
+        return json.dumps({"_id": {"citizenId": index}, "nino": "phoney"})
+    elif table == "contract":
+        return json.dumps({"_id": {"contractId": index}, "people": ["phoney"]})
+    else:
+        return json.dumps({"_id": {"statementId": index}, "assessmentPeriod": {"contractId": "phoney"}})
+
+
+def overwritten_field(table: str) -> str:
+    if table == "claimant":
+        return "nino"
+    elif table == "contract":
+        return "citizen_a"
+    else:
+        return "contract_id"
+
+
+def overwritten_value(table: str) -> str:
+    if table == "claimant":
+        return "xFJrf8lbU4G-LB3gx6uF0z531bs0DIVYQ5o5514Y5OrrlxEriQ_W-jEum6bgveIL9gFwwRswDXz8lgqmTQCgFg=="
+    elif table == "contract":
+        return "abc"
+    else:
+        return "6e2b4428-2da5-4f77-9904-e0c2fc850c4f"
 
 
 def assert_messages_on_queue(consumer, count, accumulation=0):
@@ -118,7 +147,6 @@ def assert_messages_on_queue(consumer, count, accumulation=0):
         record_values = [x.value.decode() for x in [value for value in list(records.values())][0]]
         accumulation += len(record_values)
         if accumulation >= count:
-            print(accumulation, count)
             assert accumulation == count
             return
 
@@ -163,6 +191,12 @@ def subscribed_consumer(topic: str, offset: int = 0):
 
 def bootstrap_server():
     return "kafka:9092"
+
+
+def topic_db_object(i, topic):
+    if topic == "db.core.claimant":
+        return claimant_db_object(i)
+    return contract_db_object(i) if topic == "db.core.contract" else statement_db_object(i)
 
 
 def claimant_db_object(record_number: int):

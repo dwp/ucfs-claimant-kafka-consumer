@@ -10,8 +10,7 @@ import javax.sql.DataSource
 import kotlin.time.ExperimentalTime
 
 @Configuration
-class RdsConfiguration(private val secretRepository: SecretRepository,
-                       private val databaseEndpoint: String,
+class RdsConfiguration(private val databaseEndpoint: String,
                        private val databasePort: Int,
                        private val databaseName: String,
                        private val databaseUser: String,
@@ -19,14 +18,11 @@ class RdsConfiguration(private val secretRepository: SecretRepository,
                        private val databaseCaCertPath: String,
                        private val claimantTable: String,
                        private val contractTable: String,
-                       private val statementTable: String,
-                       private val claimantTopic: String,
-                       private val contractTopic: String,
-                       private val statementTopic: String,) {
+                       private val statementTable: String) {
 
     @ExperimentalTime
     @Bean
-    fun dataSource(): DataSource =
+    fun dataSource(secretRepository: SecretRepository): DataSource =
         BasicDataSource().apply {
             url = "jdbc:mysql://$databaseEndpoint:$databasePort/$databaseName"
             addConnectionProperty("user", databaseUser)
@@ -40,7 +36,7 @@ class RdsConfiguration(private val secretRepository: SecretRepository,
 
     @Bean
     @Qualifier("targetTables")
-    fun targetTables(): Map<String, String> =
+    fun targetTables(claimantTopic: String, contractTopic: String, statementTopic: String,): Map<String, String> =
         mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
 
 }

@@ -1,4 +1,5 @@
 import base64
+import base64
 import binascii
 import json
 import requests
@@ -111,7 +112,6 @@ def step_impl(context, expected, table):
         contents_cursor = connection.cursor()
         contents_cursor.execute(f"SELECT {overwritten_field(table)} FROM {table}")
         for data in contents_cursor:
-            print(data[0], overwritten_value(table))
             assert data[0] == overwritten_value(table)
 
 

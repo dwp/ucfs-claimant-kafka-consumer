@@ -68,6 +68,8 @@ services:
       AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       KAFKA_INSECURE: "true"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
+      RDS_DATABASE: ucfs-claimant
+      RDS_USER: claimantapi
       SECURITY_KEY_PASSWORD: changeit
       SECURITY_KEYSTORE: development-keystore.jks
       SECURITY_KEYSTORE_ALIAS: cid

@@ -5,7 +5,7 @@ or writes them to a "success" topic derived from the source topic.
 
 ## Makefile
 
-The Makefile wraps some of the docker-compose commands to give a more unified
+The Makefile wraps some docker-compose commands to give a more unified
 basic set of operations. These can be checked by running `make help`
 
 To bring up the app and run the integration tests run `make tests`.
@@ -78,10 +78,7 @@ successful processing step.
 
 ### The targets
 
-At present there are two, neither of which will make it into production. One
-simply prints the processing output onto the console (or rather to the log), the
-other posts successfully processed records to a kafka queue. This is to
-facilitate integration testing of the processor.
+Records that are processed successfully are sent to the `RdsTarget` for persistence in the database.
 
 Records that fail processing are sent to a dead letter queue and are considered
 dealt with.
@@ -118,15 +115,26 @@ variables or a mixture of the two.
 | kafka.pollDurationSeconds       | KAFKA_POLL_DURATION_SECONDS       | How long to poll before returning | 10 | Possibly |
 | kafka.topicRegex                | KAFKA_TOPIC_REGEX                 | Topics matching this regex will be subscribed to |  | Yes |
 | kafka.useSsl                    | KAFKA_USE_SSL                     | Whether to enable a mutually authenticated connection | false | Yes |
+| rds.endpoint                    | RDS_ENDPOINT                      | The database host | "rds" | Yes |
+| rds.port                        | RDS_PORT                          | The port the database listens on | 3306 | No |
+| rds.database                    | RDS_DATABASE                      | The name of the database| | Yes |
+| rds.user                        | RDS_USER                          | The user to connect ot the database as | "" | Yes |
+| rds.caCertPath                  | RDS_CA_CERT_PATH                  | The servers CA certificate | "" | Yes |
+| rds.claimantTable               | RDS_CLAIMANT_TABLE                | The name of the table to which claimant updates should be written | "claimant" | No |
+| rds.contractTable               | RDS_CONTRACT_TABLE                | The name of the table to which contract updates should be written | "contract" | No |
+| rds.statementTable              | RDS_STATEMENT_TABLE               | The name of the table to which statement updates should be written | "statement" | No |
 | security.keyPassword            | SECURITY_KEY_PASSWORD             | Private key password | | Yes |
 | security.keystore               | SECURITY_KEYSTORE                 | Path to keystore containing app certificates | "" | Yes |
 | security.keystoreAlias          | SECURITY_KEYSTORE_ALIAS           | The private key alias | | Yes |
 | security.keystorePassword       | SECURITY_KEYSTORE_PASSWORD        | The keystore password | | Yes |
 | security.truststore             | SECURITY_TRUSTSTORE               | The path to the truststore | | Yes |
 | security.truststorePassword     | SECURITY_TRUSTSTORE_PASSWORD      | The truststore password | | Yes |
-| topic.claimant                  | TOPIC_CLAIMANT                    | The name of the claimant topic | "db.core.claimant" | |
-| topic.contract                  | TOPIC_CONTRACT                    | The name of the contract topic | "db.core.contract" | |
-| topic.statement                 | TOPIC_STATEMENT                   | The name of the statement topic | "db.core.statement" | |
+| source.claimantTopic            | SOURCE_CLAIMANT_TOPIC             | The name of the topic on which claimant updates arrive | "db.core.claimant" | No |
+| source.contractTopic            | SOURCE_CONTRACT_TOPIC             | The name of the topic on which contract updates arrive | "db.core.contract" | No |
+| source.statementTopic           | SOURCE_STATEMENT_TOPIC            | The name of the topic on which statement updates arrive  | "db.core.statement" | No |
+| source.claimantIdField          | SOURCE_CLAIMANT_ID_FIELD          | The field within the mongo `_id` sub-document that has the claimant natural id | "citizenId" | No |
+| source.contractIdField          | SOURCE_CONTRACT_ID_FIELD          | The field within the mongo `_id` sub-document that has the contract natural id | "contractId" | No |
+| source.statementIdField         | SOURCE_STATEMENT_ID_FIELD         | The field within the mongo `_id` sub-document that has the statement natural id | "statementId" | No |
 | validation.schemaLocation       | VALIDATION_SCHEMA_LOCATION        | The location of the message json schema | "/message.schema.json" | |
 
 

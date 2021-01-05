@@ -10,7 +10,6 @@ data class RdsProperties(var endpoint: String = "rds",
                          var port: Int = 3306,
                          var database: String = "",
                          var user: String = "",
-                         var passwordSecretName: String = "",
                          var caCertPath: String = "",
                          var claimantTable: String = "claimant",
                          var contractTable: String = "contract",
@@ -27,9 +26,6 @@ data class RdsProperties(var endpoint: String = "rds",
 
     @Bean
     fun databaseUser() = user
-
-    @Bean
-    fun databasePasswordSecretName() = passwordSecretName
 
     @Bean
     fun databaseCaCertPath() = caCertPath

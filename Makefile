@@ -103,7 +103,7 @@ push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 	}
 
 mysql_root: ## Get a root session on the  database.
-	docker exec -it rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant
+	docker exec -it rds mysql --user=root --password=password ucfs-claimant
 
 mysql_user: ## Get a client session on the database.
 	docker exec -it rds mysql --user=claimantapi --password=password ucfs-claimant

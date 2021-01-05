@@ -14,7 +14,6 @@ class RdsConfiguration(private val databaseEndpoint: String,
                        private val databasePort: Int,
                        private val databaseName: String,
                        private val databaseUser: String,
-                       private val databasePasswordSecretName: String,
                        private val databaseCaCertPath: String,
                        private val claimantTable: String,
                        private val contractTable: String,
@@ -22,11 +21,11 @@ class RdsConfiguration(private val databaseEndpoint: String,
 
     @ExperimentalTime
     @Bean
-    fun dataSource(secretRepository: SecretRepository): DataSource =
+    fun dataSource(secretRepository: SecretRepository, rdsPasswordSecretName: String): DataSource =
         BasicDataSource().apply {
             url = "jdbc:mysql://$databaseEndpoint:$databasePort/$databaseName"
             addConnectionProperty("user", databaseUser)
-            addConnectionProperty("password", secretRepository.secret(databasePasswordSecretName))
+            addConnectionProperty("password", secretRepository.secret(rdsPasswordSecretName))
             if (databaseCaCertPath.isNotBlank()) {
                 addConnectionProperty("ssl_ca_path", databaseCaCertPath)
                 addConnectionProperty("ssl_ca", File(databaseCaCertPath).readText())

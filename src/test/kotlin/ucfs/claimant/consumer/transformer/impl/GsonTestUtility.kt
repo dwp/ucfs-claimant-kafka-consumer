@@ -23,5 +23,7 @@ object GsonTestUtility {
         return gson.toJson(obj)
     }
 
+    fun jsonObject(json: String): JsonObject = gson.fromJson(json, JsonObject::class.java)
+
     val gson: Gson = GsonBuilder().serializeNulls().create()
 }

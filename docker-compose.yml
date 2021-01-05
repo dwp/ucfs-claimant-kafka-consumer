@@ -21,6 +21,17 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  rds:
+    image: mysql:5.7
+    ports:
+      - 3306:3306
+    container_name: rds
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "ucfs-claimant"
+      MYSQL_USER: "claimantapi"
+      MYSQL_PASSWORD: "password"
+
   dks:
     image: dks
     ports:
@@ -35,7 +46,7 @@ services:
       - 4566:4566
     container_name: localstack
     environment:
-      - SERVICES=kms,s3,ssm
+      - SERVICES=kms,s3,secretsmanager,ssm
 
   localstack-init:
     image: localstack-init
@@ -52,10 +63,13 @@ services:
     depends_on:
       - kafka
     environment:
-      AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       AWS_CMK_ALIAS: alias/ucfs_etl_cmk
+      AWS_RDS_PASSWORD_SECRET_NAME: ucfs-claimant-api-db-password
+      AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       KAFKA_INSECURE: "true"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
+      RDS_DATABASE: ucfs-claimant
+      RDS_USER: claimantapi
       SECURITY_KEY_PASSWORD: changeit
       SECURITY_KEYSTORE: development-keystore.jks
       SECURITY_KEYSTORE_ALIAS: cid

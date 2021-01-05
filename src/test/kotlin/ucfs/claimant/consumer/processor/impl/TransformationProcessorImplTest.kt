@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.processor.impl
 
-import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -50,9 +51,10 @@ class TransformationProcessorImplTest: StringSpec() {
         val sourceRecord = sourceRecord(sourceTopic)
         succeedingProcessor().process(decryptionResult(sourceRecord)) shouldBeRight { (consumerRecord, transformed) ->
             consumerRecord shouldBeSameInstanceAs sourceRecord
-            val (outputJson, transformedDbObject) = transformed
+            val (outputJson, transformedDbObject, action) = transformed
             outputJson.json() shouldMatchJson inputJson
             transformedDbObject shouldBe result
+            action shouldBe "MONGO_INSERT"
         }
     }
 
@@ -72,33 +74,27 @@ class TransformationProcessorImplTest: StringSpec() {
             on { key() } doReturn topic.toByteArray()
         }
 
-    private fun succeedingProcessor(): TransformationProcessor =
-            TransformationProcessorImpl(
-                succeedingTransformer(claimantResult),
-                succeedingTransformer(contractResult),
-                succeedingTransformer(statementResult),
-                claimantSourceTopic,
-                contractSourceTopic,
-                statementSourceTopic)
-
-    private fun failingProcessor(): TransformationProcessor =
-        TransformationProcessorImpl(
-            failingTransformer(claimantResult),
-            failingTransformer(contractResult),
-            failingTransformer(statementResult),
-            claimantSourceTopic,
-            contractSourceTopic,
-            statementSourceTopic)
-
     companion object {
-        fun succeedingTransformer(result: String): Transformer =
+        private fun succeedingProcessor(): TransformationProcessor =
+            TransformationProcessorImpl(
+                mapOf(claimantSourceTopic to succeedingTransformer(claimantResult),
+                      contractSourceTopic to succeedingTransformer(contractResult),
+                      statementSourceTopic to succeedingTransformer(statementResult)))
+
+        private fun failingProcessor(): TransformationProcessor =
+            TransformationProcessorImpl(
+                mapOf(claimantSourceTopic to failingTransformer(claimantResult),
+                      contractSourceTopic to failingTransformer(contractResult),
+                      statementSourceTopic to failingTransformer(statementResult)))
+
+        private fun succeedingTransformer(result: String): Transformer =
             mock {
-                on { transform(any()) } doReturn Either.Right(result)
+                on { transform(any()) } doReturn result.right()
             }
 
-        fun failingTransformer(result: String): Transformer =
+        private fun failingTransformer(result: String): Transformer =
             mock {
-                on { transform(any()) } doReturn Either.Left(result)
+                on { transform(any()) } doReturn result.left()
             }
 
         private const val claimantSourceTopic: String = "db.core.claimant"
@@ -107,8 +103,8 @@ class TransformationProcessorImplTest: StringSpec() {
         private const val claimantResult: String = "claimant"
         private const val contractResult: String = "contract"
         private const val statementResult: String = "statement"
-        private const val inputJson: String = """{ "key": "value" }"""
+        private const val inputJson: String = """{ "message": { "@type": "MONGO_INSERT" } }"""
         private val jsonObject = Gson().fromJson(inputJson, JsonObject::class.java)
-        private val decryptionResult = DecryptionResult(jsonObject, "plaintext")
+        private val decryptionResult = DecryptionResult(jsonObject, """{ "_id": { "id": "123"} }""")
     }
 }

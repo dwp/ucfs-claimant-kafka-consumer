@@ -1,5 +1,6 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
+import arrow.core.Either
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -52,29 +53,34 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
         }
     }
 
-    private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<ConsumerRecord<ByteArray, ByteArray>>) {
-        try {
-            val (successes, failures) =
-                    records.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
-            failureTarget.send(failures.mapNotNull { it.swap().orNull() })
-            successTarget.send(topicPartition.topic(), successes.mapNotNull(TransformationProcessingOutput::orNull))
-            lastPosition(records).let { lastPosition ->
-                logger.info("Processed batch, committing offset",
-                        "topic" to topicPartition.topic(), "partition" to "${topicPartition.partition()}",
-                        "offset" to "$lastPosition")
-                commitSync(mapOf(topicPartition to OffsetAndMetadata(lastPosition + 1)))
-            }
-        } catch (e: Exception) {
-            logger.error("Batch failed, not committing offset, resetting position to last commit", e,
-                    "topic" to topicPartition.topic(),
-                    "partition" to "${topicPartition.partition()}")
-            rollback(topicPartition)
-        }
-    }
+    private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<ConsumerRecord<ByteArray, ByteArray>>) =
+            sendToTargets(records, topicPartition).fold(
+                ifRight = {
+                    lastPosition(records).let { lastPosition ->
+                        logger.info("Processed batch, committing offset",
+                            "topic" to topicPartition.topic(), "partition" to "${topicPartition.partition()}",
+                            "offset" to "$lastPosition")
+                        commitSync(mapOf(topicPartition to OffsetAndMetadata(lastPosition + 1)))
+                    }
+                },
+                ifLeft = {
+                    logger.error("Batch failed, not committing offset, resetting position to last commit", it,
+                        "topic" to topicPartition.topic(),
+                        "partition" to "${topicPartition.partition()}")
+                    rollback(topicPartition)
+                })
 
-    private fun <K, V> KafkaConsumer<K, V>.rollback(topicPartition: TopicPartition) {
-        lastCommittedOffset(topicPartition)?.let { seek(topicPartition, it) }
-    }
+   private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topicPartition: TopicPartition) =
+            Either.catch {
+                val (successes, failures) =
+                    records.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
+                failureTarget.send(failures.mapNotNull { it.swap().orNull() })
+                successTarget.send(topicPartition.topic(), successes.mapNotNull(TransformationProcessingOutput::orNull))
+            }
+
+
+    private fun <K, V> KafkaConsumer<K, V>.rollback(topicPartition: TopicPartition) =
+            lastCommittedOffset(topicPartition)?.let { seek(topicPartition, it) }
 
     private fun <K, V> KafkaConsumer<K, V>.lastCommittedOffset(partition: TopicPartition): Long? =
             committed(partition)?.offset()
@@ -82,17 +88,15 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
     private fun lastPosition(partitionRecords: List<ConsumerRecord<ByteArray, ByteArray>>) =
             partitionRecords[partitionRecords.size - 1].offset()
 
-    private infix fun <K, V> KafkaConsumer<K, V>.handleSignal(signalName: String) {
-        logger.info("Setting up handler", "signal" to signalName)
-        Signal.handle(Signal(signalName)) {
-            logger.info("Signal received, cancelling job.", "signal" to "$it")
-            closed.set(true)
-            wakeup()
-        }
-    }
+    private infix fun <K, V> KafkaConsumer<K, V>.handleSignal(signalName: String) =
+            Signal.handle(Signal(signalName)) {
+                logger.info("Signal received, cancelling job.", "signal" to "$it")
+                closed.set(true)
+                wakeup()
+            }
 
     companion object {
         private val logger = DataworksLogger.getLogger(OrchestratorImpl::class)
-        private val closed: AtomicBoolean = AtomicBoolean(false)
+        private val closed = AtomicBoolean(false)
     }
 }

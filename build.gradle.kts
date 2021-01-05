@@ -37,7 +37,9 @@ dependencies {
     implementation("io.arrow-kt:arrow-syntax:0.11.0")
     implementation("software.amazon.awssdk:ssm:2.15.45")
     implementation("software.amazon.awssdk:kms:2.15.45")
-    implementation("com.github.ben-manes.caffeine:caffeine:2.8.8")
+    implementation("software.amazon.awssdk:secretsmanager:2.15.45")
+    implementation("mysql:mysql-connector-java:6.0.6")
+    implementation("org.apache.commons:commons-dbcp2:2.8.0")
 
     kapt("io.arrow-kt:arrow-meta:0.11.0")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

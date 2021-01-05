@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.target.impl
 
 import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -50,10 +51,13 @@ class RdsTargetTest: StringSpec() {
         positionCaptor.allValues.forEachIndexed { index, value ->
             value shouldBe index % 2 + 1
         }
-        jsonCaptor.allValues.asSequence().filterIndexed { index, _ -> index % 2 == 0 }.map(::jsonObject)
+        jsonCaptor.allValues.asSequence()
+            .filterIndexed { index, _ -> index % 2 == 0 }
+            .map(::jsonObject)
             .map { it.getAsJsonObject("_id") }
             .map { it.getAsJsonPrimitive("id") }
-            .map { it.asInt }.toList()
+            .map(JsonPrimitive::getAsInt)
+            .toList()
             .forEachIndexed { index, x ->
                 x % 3 shouldNotBe 2
                 x % 3 shouldBe index % 2

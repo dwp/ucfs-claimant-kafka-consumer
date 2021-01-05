@@ -13,7 +13,7 @@ import ucfs.claimant.consumer.domain.EncryptionExtractionResult
 import ucfs.claimant.consumer.domain.EncryptionMetadata
 import ucfs.claimant.consumer.domain.SourceRecord
 
-class EncryptionExtractionProcessorImplTest : StringSpec() {
+class ExtractionProcessorImplTest : StringSpec() {
     private val encryptedKey = "encryptedEncryptionKey"
     private val encryptingKeyId = "keyEncryptionKeyId"
     private val initialisationVector = "initialisationVector"

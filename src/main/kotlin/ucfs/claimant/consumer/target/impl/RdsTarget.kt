@@ -24,12 +24,10 @@ class RdsTarget(private val dataSource: DataSource,
         }
     }
 
-
     private fun upsertSql(topic: String): String =
         """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?"""
 
     companion object {
         private const val DELETE_ACTION = "MONGO_DELETE"
     }
-
 }

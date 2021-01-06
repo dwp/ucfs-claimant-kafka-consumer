@@ -11,9 +11,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+import ucfs.claimant.consumer.domain.JsonProcessingResult
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.domain.TransformationResult
 import ucfs.claimant.consumer.processor.CompoundProcessor
+import ucfs.claimant.consumer.processor.PreProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
 import java.time.Duration
@@ -50,13 +52,16 @@ class OrchestratorImplTest : StringSpec() {
             val failureTarget = mock<FailureTarget>()
 
             val queueRecord = mock<SourceRecord>()
+
+            val preProcessor = preProcessor(queueRecord)
+
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
                 } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
             }
 
-            val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
+            val consumerService = OrchestratorImpl(provider, Regex(topic), preProcessor, processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
             shouldThrow<RuntimeException> { consumerService.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
             val failedTopicPartition = TopicPartition(topic, 0)
@@ -103,13 +108,21 @@ class OrchestratorImplTest : StringSpec() {
                 on { process(any()) } doReturnConsecutively records
             }
 
-            val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
+            val preProcessor = preProcessor(queueRecord)
+            val consumerService = OrchestratorImpl(provider, Regex(topic), preProcessor, processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
             shouldThrow<RuntimeException> { consumerService.orchestrate() }
             verify(failureTarget, times(10)).send(any())
             verify(successTarget, times(10)).send(any(), any())
         }
 
     }
+
+    private fun preProcessor(queueRecord: SourceRecord): PreProcessor =
+        mock {
+            on {
+                process(any())
+            } doReturn JsonProcessingResult(queueRecord, JsonObject()).right()
+        }
 
 
     private fun consumerRecords(first: Int, last: Int): ConsumerRecords<ByteArray, ByteArray> =

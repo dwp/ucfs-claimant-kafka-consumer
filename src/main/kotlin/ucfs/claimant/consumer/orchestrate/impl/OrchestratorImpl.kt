@@ -11,6 +11,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.springframework.stereotype.Service
 import sun.misc.Signal
+import ucfs.claimant.consumer.domain.JsonProcessingOutput
 import ucfs.claimant.consumer.domain.SourceRecordProcessingOutput
 import ucfs.claimant.consumer.domain.TransformationProcessingOutput
 import ucfs.claimant.consumer.orchestrate.Orchestrator
@@ -20,6 +21,7 @@ import ucfs.claimant.consumer.processor.SourceRecordProcessor
 import ucfs.claimant.consumer.processor.ValidationProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
+import ucfs.claimant.consumer.utility.GsonExtensions.string
 import ucfs.claimant.consumer.utility.KafkaConsumerUtility.subscribe
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.time.Duration
@@ -78,15 +80,19 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
 
    private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topicPartition: TopicPartition) =
             Either.catch {
-                val sourceRecords = records.map(preProcessor::process)
+                val (sourced, notSourced) =
+                    records.map(preProcessor::process).partition(JsonProcessingOutput::isRight)
 
-                val (successes, failures) =
-                    sourceRecords.map { it.flatMap(compoundProcessor::process) }
+                //val (insertsAndUpdates, deletes) = sourced.partition(JsonProcessingOutput::isDelete)
+
+                val (processed, notProcessed) =
+                    sourced.map { it.flatMap(compoundProcessor::process) }
                         .partition(TransformationProcessingOutput::isRight)
 
-                failureTarget.send(failures.mapNotNull { it.swap().orNull() })
-                successTarget.send(topicPartition.topic(), successes.mapNotNull(TransformationProcessingOutput::orNull))
+                failureTarget.send((notSourced + notProcessed).mapNotNull { it.swap().orNull() })
+                successTarget.send(topicPartition.topic(), processed.mapNotNull(TransformationProcessingOutput::orNull))
             }
+
 
 
     private fun <K, V> KafkaConsumer<K, V>.rollback(topicPartition: TopicPartition) =

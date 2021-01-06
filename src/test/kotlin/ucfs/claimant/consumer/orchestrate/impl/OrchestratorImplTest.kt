@@ -11,6 +11,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
+import ucfs.claimant.consumer.domain.DatabaseAction
 import ucfs.claimant.consumer.domain.JsonProcessingResult
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.domain.TransformationResult
@@ -121,7 +122,7 @@ class OrchestratorImplTest : StringSpec() {
         mock {
             on {
                 process(any())
-            } doReturn JsonProcessingResult(queueRecord, JsonObject()).right()
+            } doReturn JsonProcessingResult(queueRecord, Pair(JsonObject(), DatabaseAction.MONGO_INSERT)).right()
         }
 
 

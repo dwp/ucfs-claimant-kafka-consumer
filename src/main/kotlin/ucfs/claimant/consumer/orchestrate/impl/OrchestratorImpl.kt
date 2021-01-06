@@ -1,7 +1,6 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
 import arrow.core.Either
-import arrow.core.flatMap
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -11,17 +10,12 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.springframework.stereotype.Service
 import sun.misc.Signal
-import ucfs.claimant.consumer.domain.JsonProcessingOutput
-import ucfs.claimant.consumer.domain.SourceRecordProcessingOutput
-import ucfs.claimant.consumer.domain.TransformationProcessingOutput
+import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.orchestrate.Orchestrator
 import ucfs.claimant.consumer.processor.CompoundProcessor
 import ucfs.claimant.consumer.processor.PreProcessor
-import ucfs.claimant.consumer.processor.SourceRecordProcessor
-import ucfs.claimant.consumer.processor.ValidationProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
-import ucfs.claimant.consumer.utility.GsonExtensions.string
 import ucfs.claimant.consumer.utility.KafkaConsumerUtility.subscribe
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.time.Duration
@@ -80,19 +74,34 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
 
    private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topicPartition: TopicPartition) =
             Either.catch {
-                val (sourced, notSourced) =
-                    records.map(preProcessor::process).partition(JsonProcessingOutput::isRight)
-
-                //val (insertsAndUpdates, deletes) = sourced.partition(JsonProcessingOutput::isDelete)
-
-                val (processed, notProcessed) =
-                    sourced.map { it.flatMap(compoundProcessor::process) }
-                        .partition(TransformationProcessingOutput::isRight)
-
-                failureTarget.send((notSourced + notProcessed).mapNotNull { it.swap().orNull() })
-                successTarget.send(topicPartition.topic(), processed.mapNotNull(TransformationProcessingOutput::orNull))
+                val (sourced, notSourced) = splitPreprocessed(records)
+                val (additionsAndModifications, deletes) = splitActions(sourced)
+                val (processed, notProcessed) = splitProcessed(additionsAndModifications)
+                sendFailures(notSourced, notProcessed)
+                sendAdditionsModifications(topicPartition.topic(), processed)
             }
 
+    private suspend fun sendAdditionsModifications(topicPartition: String,
+            processed: List<TransformationProcessingOutput>) =
+        successTarget.send(topicPartition, processed.mapNotNull(TransformationProcessingOutput::orNull))
+
+
+    private fun splitProcessed(additionsAndModifications: List<JsonProcessingResult>) =
+            additionsAndModifications.map(compoundProcessor::process)
+                .partition(TransformationProcessingOutput::isRight)
+
+    private fun splitActions(sourced: List<JsonProcessingOutput>) =
+            sourced.mapNotNull(JsonProcessingOutput::orNull).partition { (_, thing) ->
+                thing.second != DatabaseAction.MONGO_DELETE
+            }
+
+    private fun splitPreprocessed(records: List<ConsumerRecord<ByteArray, ByteArray>>) =
+        records.map(preProcessor::process).partition(JsonProcessingOutput::isRight)
+
+    private fun sendFailures(notSourced: List<JsonProcessingOutput>, notProcessed: List<TransformationProcessingOutput>) =
+        failureTarget.send((notSourced + notProcessed)
+            .map(Either<SourceRecord, Pair<SourceRecord, Any>>::swap)
+            .mapNotNull(Either<Pair<SourceRecord, Any>, SourceRecord>::orNull))
 
 
     private fun <K, V> KafkaConsumer<K, V>.rollback(topicPartition: TopicPartition) =

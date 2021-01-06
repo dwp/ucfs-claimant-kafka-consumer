@@ -9,6 +9,7 @@ import io.kotest.assertions.arrow.either.shouldBeRight
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import ucfs.claimant.consumer.domain.DatabaseAction
 import ucfs.claimant.consumer.domain.EncryptionExtractionResult
 import ucfs.claimant.consumer.domain.EncryptionMetadata
 import ucfs.claimant.consumer.domain.SourceRecord
@@ -55,7 +56,7 @@ class ExtractionProcessorImplTest : StringSpec() {
             val queueRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }
-            val result = ExtractionProcessorImpl().process(Pair(queueRecord, json))
+            val result = ExtractionProcessorImpl().process(Pair(queueRecord, Pair(json ,DatabaseAction.MONGO_INSERT)))
             result shouldBeLeft queueRecord
         }
 
@@ -88,7 +89,7 @@ class ExtractionProcessorImplTest : StringSpec() {
 
     private fun validateRight(json: JsonObject) {
         val queueRecord = mock<SourceRecord>()
-        val result = ExtractionProcessorImpl().process(Pair(queueRecord, json))
+        val result = ExtractionProcessorImpl().process(Pair(queueRecord, Pair(json, DatabaseAction.MONGO_INSERT)))
         result shouldBeRight { (record, result) ->
             record shouldBeSameInstanceAs queueRecord
             result shouldBe EncryptionExtractionResult(json, EncryptionMetadata(encryptingKeyId,
@@ -101,7 +102,7 @@ class ExtractionProcessorImplTest : StringSpec() {
         val queueRecord = mock<SourceRecord> {
             on { key() } doReturn "key".toByteArray()
         }
-        val result = ExtractionProcessorImpl().process(Pair(queueRecord, json))
+        val result = ExtractionProcessorImpl().process(Pair(queueRecord, Pair(json, DatabaseAction.MONGO_UPDATE)))
         result shouldBeLeft queueRecord
     }
 

@@ -29,6 +29,8 @@ data class EncryptedDataKeyServiceData(val encryptingKeyId: String, val dataKey:
     }
 }
 
+enum class DatabaseAction { MONGO_INSERT, MONGO_UPDATE, MONGO_DELETE }
+
 data class EncryptionExtractionResult(val json: JsonObject, val encryptionMetadata: EncryptionMetadata)
 data class DataKeyResult(val json: JsonObject, val initializationVector: String, val datakey: String)
 
@@ -38,6 +40,7 @@ data class CipherServiceEncryptionResult(val encryptingKeyId: String, val initia
 data class DecryptionResult(val json: JsonObject, val plainText: String)
 data class TransformationResult(val json: JsonObject, val transformedDbObject: String, val action: String)
 
+
 typealias DecryptionData = Either<Any, String>
 typealias CipherServiceEncryptionData = Either<Throwable, CipherServiceEncryptionResult>
 typealias DataKeyServiceResponse = Either<Any, String>
@@ -46,7 +49,7 @@ typealias SourceRecord = ConsumerRecord<ByteArray, ByteArray>
 
 typealias SourceRecordProcessingResult = Pair<SourceRecord, String>
 typealias ValidationProcessingResult = Pair<SourceRecord, String>
-typealias JsonProcessingResult = Pair<SourceRecord, JsonObject>
+typealias JsonProcessingResult = Pair<SourceRecord, Pair<JsonObject, DatabaseAction>>
 typealias ExtractionProcessingResult = Pair<SourceRecord, EncryptionExtractionResult>
 typealias DatakeyProcessingResult = Pair<SourceRecord, DataKeyResult>
 typealias DecryptionProcessingResult = Pair<SourceRecord, DecryptionResult>

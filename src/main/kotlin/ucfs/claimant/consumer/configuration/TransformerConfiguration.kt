@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration
 import ucfs.claimant.consumer.transformer.Transformer
 
 @Configuration
-class TransformerConfiguration() {
+class TransformerConfiguration {
 
     @Bean
     @Qualifier("transformers")

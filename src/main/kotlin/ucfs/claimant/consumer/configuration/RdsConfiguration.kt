@@ -1,18 +1,18 @@
 package ucfs.claimant.consumer.configuration
 
-import arrow.core.*
+import arrow.core.Either
 import arrow.core.extensions.either.applicative.applicative
+import arrow.core.fix
+import arrow.core.flatMap
 import org.apache.commons.dbcp2.BasicDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import ucfs.claimant.consumer.repository.SecretRepository
-import ucfs.claimant.consumer.utility.CipherExtensions.decoded
 import ucfs.claimant.consumer.utility.GsonExtensions.integer
 import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 import ucfs.claimant.consumer.utility.GsonExtensions.string
 import java.io.File
-import java.lang.RuntimeException
 import javax.sql.DataSource
 import kotlin.time.ExperimentalTime
 
@@ -53,7 +53,7 @@ class RdsConfiguration(private val databaseCaCertPath: String,
 
     @Bean
     @Qualifier("targetTables")
-    fun targetTables(claimantTopic: String, contractTopic: String, statementTopic: String,): Map<String, String> =
+    fun targetTables(claimantTopic: String, contractTopic: String, statementTopic: String): Map<String, String> =
         mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
 
 }

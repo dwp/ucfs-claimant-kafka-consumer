@@ -95,6 +95,7 @@ variables or a mixture of the two.
 |---------------------------------|-----------------------------------|---------|---------|----------------|
 | aws.cmkAlias                    | AWS_CMK_ALIAS                     | The alias of the master key in KMS |  | Yes |
 | aws.saltParameterName           | AWS_SALT_PARAMETER_NAME           | The name of the parameter in the parameter store which houses the salt value | | Yes |
+| aws.rdsSecretName               | AWS_RDS_SECRET_NAME               | The name of the secrets manager secret that has the rds connection parameters | | Yes |
 | cipher.dataKeySpec              | CIPHER_DATA_KEY_SPEC              | The specification of the datakeys that are generated | "AES_256" | |
 | cipher.decryptingAlgorithm      | CIPHER_DECRYPTING_ALGORITHM       | The cipher algorithm used to decrypt the data keys that encrypted the message dbObjects | "AES" | |
 | cipher.decryptingProvider       | CIPHER_DECRYPTING_PROVIDER        | The provider used to perform the data key decryption | "BC" | |
@@ -115,11 +116,7 @@ variables or a mixture of the two.
 | kafka.pollDurationSeconds       | KAFKA_POLL_DURATION_SECONDS       | How long to poll before returning | 10 | Possibly |
 | kafka.topicRegex                | KAFKA_TOPIC_REGEX                 | Topics matching this regex will be subscribed to |  | Yes |
 | kafka.useSsl                    | KAFKA_USE_SSL                     | Whether to enable a mutually authenticated connection | false | Yes |
-| rds.endpoint                    | RDS_ENDPOINT                      | The database host | "rds" | Yes |
-| rds.port                        | RDS_PORT                          | The port the database listens on | 3306 | No |
-| rds.database                    | RDS_DATABASE                      | The name of the database| | Yes |
-| rds.user                        | RDS_USER                          | The user to connect ot the database as | "" | Yes |
-| rds.caCertPath                  | RDS_CA_CERT_PATH                  | The servers CA certificate | "" | Yes |
+| rds.caCertPath                  | RDS_CA_CERT_PATH                  | The servers CA certificate | "./rds-ca-2019-2015-root.pem" | No |
 | rds.claimantTable               | RDS_CLAIMANT_TABLE                | The name of the table to which claimant updates should be written | "claimant" | No |
 | rds.contractTable               | RDS_CONTRACT_TABLE                | The name of the table to which contract updates should be written | "contract" | No |
 | rds.statementTable              | RDS_STATEMENT_TABLE               | The name of the table to which statement updates should be written | "statement" | No |

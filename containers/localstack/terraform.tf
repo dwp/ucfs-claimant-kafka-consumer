@@ -38,11 +38,11 @@ resource "aws_ssm_parameter" "ucfs_claimant_api_nino_salt" {
   value = "SALT"
 }
 
-resource "aws_secretsmanager_secret" "ucfs_claimant_api_db_password" {
-  name = "ucfs-claimant-api-db-password"
+resource "aws_secretsmanager_secret" "ucfs_claimant_api_db" {
+  name = "ucfs-claimant-api-db"
 }
 
-resource "aws_secretsmanager_secret_version" "example" {
-  secret_id     = aws_secretsmanager_secret.ucfs_claimant_api_db_password.id
-  secret_string = "password"
+resource "aws_secretsmanager_secret_version" "latest" {
+  secret_id     = aws_secretsmanager_secret.ucfs_claimant_api_db.id
+  secret_string = "{ \"dbInstanceIdentifier\": \"ucfs-claimant\", \"engine\": \"aurora-mysql\", \"host\": \"rds\", \"port\": 3306, \"username\": \"claimantapi\",\"password\": \"password\"}"
 }

@@ -64,19 +64,19 @@ services:
       - kafka
     environment:
       AWS_CMK_ALIAS: alias/ucfs_etl_cmk
-      AWS_RDS_PASSWORD_SECRET_NAME: ucfs-claimant-api-db-password
+      AWS_RDS_SECRET_NAME: ucfs-claimant-api-db
       AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       KAFKA_INSECURE: "true"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
-      RDS_DATABASE: ucfs-claimant
-      RDS_USER: claimantapi
+      RDS_CA_CERT_PATH: ""
       SECURITY_KEY_PASSWORD: changeit
       SECURITY_KEYSTORE: development-keystore.jks
       SECURITY_KEYSTORE_ALIAS: cid
       SECURITY_KEYSTORE_PASSWORD: changeit
       SECURITY_TRUSTSTORE: development-truststore.jks
       SECURITY_TRUSTSTORE_PASSWORD: changeit
-      SPRING_PROFILES_ACTIVE: QUEUE_TARGET,LOCALSTACK
+      SPRING_MAIN_BANNER_MODE: "off"
+      SPRING_PROFILES_ACTIVE: LOCALSTACK
 
   ucfs-claimant-kafka-consumer-tests:
     image: ucfs-claimant-kafka-consumer-tests:latest

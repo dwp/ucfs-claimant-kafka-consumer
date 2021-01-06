@@ -13,6 +13,7 @@ gradlew.bat
 venv/
 *.jks
 *.crt
-*.pem
 *.p12
 *.jks
+*-crt.pem
+*-key.pem

@@ -1,17 +1,16 @@
 import base64
-import base64
-import binascii
 import json
+
+import binascii
+import mysql.connector
+import parse
 import requests
 import time
-import parse
-
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 from behave import given, then, step, register_type
 from kafka import KafkaProducer, KafkaConsumer, TopicPartition
-import mysql.connector
 
 
 @parse.with_pattern(r"\d+")

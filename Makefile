@@ -30,7 +30,7 @@ rds:
 			sleep 2; \
 		done; \
 	}
-	docker exec -i rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant  < ./containers/rds/create_tables.sql
+	docker exec -i rds mysql --user=root --password=password ucfs-claimant  < ./containers/rds/create_tables.sql
 
 localstack: ## bring up localstack container and wait for it to be ready
 	docker-compose up -d localstack

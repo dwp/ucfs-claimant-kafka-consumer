@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
 import arrow.core.Either
+import arrow.core.flatMap
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -10,9 +11,13 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import org.springframework.stereotype.Service
 import sun.misc.Signal
+import ucfs.claimant.consumer.domain.SourceRecordProcessingOutput
 import ucfs.claimant.consumer.domain.TransformationProcessingOutput
 import ucfs.claimant.consumer.orchestrate.Orchestrator
 import ucfs.claimant.consumer.processor.CompoundProcessor
+import ucfs.claimant.consumer.processor.PreProcessor
+import ucfs.claimant.consumer.processor.SourceRecordProcessor
+import ucfs.claimant.consumer.processor.ValidationProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
 import ucfs.claimant.consumer.utility.KafkaConsumerUtility.subscribe
@@ -25,6 +30,7 @@ import kotlin.time.ExperimentalTime
 @Service
 class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArray, ByteArray>,
                        private val topicRegex: Regex,
+                       private val preProcessor: PreProcessor,
                        private val compoundProcessor: CompoundProcessor,
                        private val pollDuration: Duration,
                        private val successTarget: SuccessTarget,
@@ -72,8 +78,12 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
 
    private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topicPartition: TopicPartition) =
             Either.catch {
+                val sourceRecords = records.map(preProcessor::process)
+
                 val (successes, failures) =
-                    records.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
+                    sourceRecords.map { it.flatMap(compoundProcessor::process) }
+                        .partition(TransformationProcessingOutput::isRight)
+
                 failureTarget.send(failures.mapNotNull { it.swap().orNull() })
                 successTarget.send(topicPartition.topic(), successes.mapNotNull(TransformationProcessingOutput::orNull))
             }

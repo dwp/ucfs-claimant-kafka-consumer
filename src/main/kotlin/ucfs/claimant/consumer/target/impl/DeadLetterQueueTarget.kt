@@ -15,7 +15,7 @@ class DeadLetterQueueTarget(private val producerProvider: () -> KafkaProducer<By
         if (records.isNotEmpty()) {
             records.forEach {
                 logger.warn("Sending record to the dlq", "topic" to it.topic(),
-                    "key" to "${String(it.key())}", "offset" to "${it.offset()}", "partition" to "${it.partition()}",
+                    "key" to String(it.key()), "offset" to "${it.offset()}", "partition" to "${it.partition()}",
                     "message_timestamp" to "${it.timestamp()}")
             }
             producerProvider().use { producer -> records.map(::producerRecord).forEach(producer::send) }

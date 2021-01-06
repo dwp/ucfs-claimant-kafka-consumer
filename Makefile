@@ -22,6 +22,16 @@ git-hooks: ## Set up hooks in .githooks
 certificates: git-hooks ## generate self-signed certificates, keystores for local development.
 	./generate-certificates.sh
 
+rds:
+	docker-compose up -d rds
+	@{ \
+		while ! docker logs rds 2>&1 | grep "^Version" | grep 3306; do \
+			echo Waiting for rds.; \
+			sleep 2; \
+		done; \
+	}
+	docker exec -i rds mysql --host=127.0.0.1 --user=root --password=password ucfs-claimant  < ./containers/rds/create_tables.sql
+
 localstack: ## bring up localstack container and wait for it to be ready
 	docker-compose up -d localstack
 	@{ \
@@ -44,7 +54,7 @@ dks:
 		done; \
 	}
 
-services: kafka localstack dks ## Bring up zookeeper, kafka
+services: kafka rds localstack dks ## Bring up zookeeper, kafka, the database etc.
 
 .PHONY: build
 build: ## Build the container
@@ -58,12 +68,6 @@ build-tests:
 
 tests: up ## Run the integration tests without rebuilding the tests
 	docker-compose up ucfs-claimant-kafka-consumer-tests
-
-integration-all-github: certificates up tests ## Run the integration tests
-
-integration-all-local: delete-topics integration-all-github ## Run the integration tests with fresh topics
-
-integration-all-with-reset: destroy certificates build-tests up tests ## Run the integration tests on a fresh stack
 
 down: ## Bring down all containers
 	docker-compose down
@@ -82,11 +86,14 @@ delete-topics: ## Clear the integration test queue.
 	make delete-topic topic="db.core.claimant"
 	make delete-topic topic="db.core.contract"
 	make delete-topic topic="db.core.statement"
-	make delete-topic topic="db.core.claimant.success"
-	make delete-topic topic="db.core.contract.success"
-	make delete-topic topic="db.core.statement.success"
 	make delete-topic topic="dead.letter.queue"
 	make list-topics
+
+truncate-tables:
+	docker exec -i rds mysql --user=claimantapi --password=password ucfs-claimant <<< \
+		"truncate claimant; truncate contract; truncate statement"
+
+clear-data: truncate-tables delete-topics
 
 push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 	@{ \
@@ -94,3 +101,9 @@ push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 		docker tag ucfs-claimant-kafka-consumer $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 	}
+
+mysql_root: ## Get a root session on the  database.
+	docker exec -it rds mysql --user=root --password=password ucfs-claimant
+
+mysql_user: ## Get a client session on the database.
+	docker exec -it rds mysql --user=claimantapi --password=password ucfs-claimant

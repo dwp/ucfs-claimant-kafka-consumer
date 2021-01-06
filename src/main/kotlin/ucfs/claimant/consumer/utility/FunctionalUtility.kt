@@ -6,13 +6,8 @@ import ucfs.claimant.consumer.utility.LoggingExtensions.logFailedProcessingStep
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 
 object FunctionalUtility {
-    fun <T, O> T.encase(f: T.() -> O): Either<Throwable, O> =
-            try {
-                Either.right(this.f())
-            } catch (e: Throwable) {
-                logger.error("Failed to run method", e, "error" to "${e.message}", "method" to "$f")
-                Either.left(e)
-            }
+    fun <T, O> T.encase(f: T.() -> O):  Either<Throwable, O> =
+        runCatching { this.f() }.fold(Either.Companion::right, Either.Companion::left)
 
     fun processingFailure(sourceRecord: SourceRecord, result: Any, message: String): SourceRecord {
         logger.logFailedProcessingStep(message, sourceRecord, result)

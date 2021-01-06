@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.transformer.impl
 
-import arrow.core.Either
+import arrow.core.right
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -20,14 +21,14 @@ class StatementTransformerTest: StringSpec(){
     init {
 
         "Returns right if all fields present" {
-            statementTransformer().transform(inputWithAllFields) shouldBeRight {
+            transform(inputWithAllFields) shouldBeRight {
                 it shouldMatchJson outputWithAllFields
             }
         }
 
         "Returns left if required field missing" {
             forAll(*requiredFields) { field ->
-                statementTransformer().transform(inputWithAllFields.withNullFields(field)) shouldBeLeft {
+                transform(inputWithAllFields.withNullFields(field)) shouldBeLeft {
                     it.shouldBeInstanceOf<Pair<JsonObject, String>>()
                     GsonTestUtility.gson.toJson(it.first) shouldMatchJson inputWithAllFields.withNullFields(field)
                     it.second shouldBe field
@@ -36,19 +37,24 @@ class StatementTransformerTest: StringSpec(){
         }
     }
 
-    private fun statementTransformer(): StatementTransformer = StatementTransformer(encryptionService())
 
-    private fun encryptionService(): EncryptionService =
+
+
+    companion object {
+        private fun cipherServiceEncryptionResult(): CipherServiceEncryptionResult =
+            CipherServiceEncryptionResult(encryptingKeyId, initialisationVector, encryptedDataKey, cipherText)
+
+        private fun statementTransformer(): StatementTransformer = StatementTransformer(encryptionService())
+
+        private fun encryptionService(): EncryptionService =
             mock {
                 on {
                     encrypt("123.45")
-                } doReturn Either.Right(cipherServiceEncryptionResult())
+                } doReturn cipherServiceEncryptionResult().right()
             }
 
-    private fun cipherServiceEncryptionResult(): CipherServiceEncryptionResult =
-            CipherServiceEncryptionResult(encryptingKeyId, initialisationVector, encryptedDataKey, cipherText)
+        private fun transform(json: String) = statementTransformer().transform(Gson().fromJson(json, JsonObject::class.java))
 
-    companion object {
         private const val dateKey = "\$date"
         private const val takeHomePay = "123.45"
         private const val encryptingKeyId = "encryptingKeyId"

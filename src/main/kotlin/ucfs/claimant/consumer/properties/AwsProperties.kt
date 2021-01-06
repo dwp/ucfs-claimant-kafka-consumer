@@ -7,10 +7,14 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @ConfigurationProperties(prefix = "aws")
 data class AwsProperties(var saltParameterName: String = "/ucfs/claimant-api/nino/salt",
-                         var cmkAlias: String = "alias/ucfs_etl_cmk") {
+                         var cmkAlias: String = "alias/ucfs_etl_cmk",
+                         var rdsPasswordSecretName: String = "") {
     @Bean
     fun saltParameterName() = saltParameterName
 
     @Bean
     fun cmkAlias() = cmkAlias
+
+    @Bean
+    fun rdsPasswordSecretName() = rdsPasswordSecretName
 }

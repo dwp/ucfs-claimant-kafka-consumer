@@ -105,7 +105,6 @@ def step_impl(context, expected, record_type, table):
         count_cursor = connection.cursor()
         count_cursor.execute(f"SELECT count(*) FROM {table}")
         actual = count_cursor.fetchone()[0]
-        print(expected, actual, table)
         assert expected == actual
         count_cursor.close()
 

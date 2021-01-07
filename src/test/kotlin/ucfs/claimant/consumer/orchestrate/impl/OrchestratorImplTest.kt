@@ -86,9 +86,14 @@ class OrchestratorImplTest : StringSpec() {
             with (orchestrator(provider, preProcessor, processor, deleteProcessor, successTarget, failureTarget)) {
                 shouldThrow<RuntimeException> { orchestrate() }
             }
+
             verify(failureTarget, times(10)).send(any())
             verify(successTarget, times(10)).upsert(any(), any())
-            verify(successTarget, times(10)).delete(any(), any())
+
+            val topicCaptor = argumentCaptor<String>()
+            val deleteCaptor = argumentCaptor<DeleteProcessingResult>()
+
+            verify(successTarget, times(10)).delete(topicCaptor.capture(), any())
         }
 
     }

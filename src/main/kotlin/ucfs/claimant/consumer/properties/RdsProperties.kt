@@ -9,7 +9,10 @@ import org.springframework.context.annotation.Configuration
 data class RdsProperties(var caCertPath: String = "./rds-ca-2019-2015-root.pem",
                          var claimantTable: String = "claimant",
                          var contractTable: String = "contract",
-                         var statementTable: String = "statement") {
+                         var statementTable: String = "statement",
+                         var claimantNaturalIdField: String = "citizen_id",
+                         var contractNaturalIdField: String = "contract_id",
+                         var statementNaturalIdField: String = "statement_id") {
 
     @Bean
     fun databaseCaCertPath() = caCertPath
@@ -22,5 +25,14 @@ data class RdsProperties(var caCertPath: String = "./rds-ca-2019-2015-root.pem",
 
     @Bean
     fun statementTable() = statementTable
+
+    @Bean
+    fun claimantNaturalIdField() = claimantNaturalIdField
+
+    @Bean
+    fun contractNaturalIdField() = contractNaturalIdField
+
+    @Bean
+    fun statementNaturalIdField() = statementNaturalIdField
 }
 

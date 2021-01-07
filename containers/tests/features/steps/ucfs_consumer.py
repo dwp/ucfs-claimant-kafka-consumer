@@ -61,8 +61,8 @@ def step_impl(context, count, state, topic):
             "unitOfWorkId": "string",
             "@type": "string",
             "message": {
-                "@type": "MONGO_INSERT",
-                "_id": {id_field(topic): i},
+                "@type": "MONGO_DELETE" if state == "delete" else "MONGO_INSERT",
+                "_id": {id_field(topic): f"{i}"},
                 "_lastModifiedDateTime": "2019-07-04T07:27:35.104+0000",
                 "db": "database",
                 "collection": "collection",
@@ -98,29 +98,30 @@ def step_impl(context, count, topic, offset):
     assert_messages_on_queue(consumer, count)
 
 
-@step("{expected:Number} decrypted records will be on {table}")
-def step_impl(context, expected, table):
+@step("{expected:Number} {record_type} records will be on {table}")
+def step_impl(context, expected, record_type, table):
     with (mysql.connector.connect(host="rds", user="claimantapi", password="password",
                                   database="ucfs-claimant")) as connection:
         count_cursor = connection.cursor()
         count_cursor.execute(f"SELECT count(*) FROM {table}")
         actual = count_cursor.fetchone()[0]
+        print(expected, actual, table)
         assert expected == actual
         count_cursor.close()
 
         contents_cursor = connection.cursor()
         contents_cursor.execute(f"SELECT {overwritten_field(table)} FROM {table}")
         for data in contents_cursor:
-            assert data[0] == overwritten_value(table)
+            assert data[0] == ("phoney" if record_type == "original" else overwritten_value(table))
 
 
 def extant_record(table: str, index: int) -> str:
     if table == "claimant":
-        return json.dumps({"_id": {"citizenId": index}, "nino": "phoney"})
+        return json.dumps({"_id": {"citizenId": f"{index}"}, "nino": "phoney"})
     elif table == "contract":
-        return json.dumps({"_id": {"contractId": index}, "people": ["phoney"]})
+        return json.dumps({"_id": {"contractId": f"{index}"}, "people": ["phoney"]})
     else:
-        return json.dumps({"_id": {"statementId": index}, "assessmentPeriod": {"contractId": "phoney"}})
+        return json.dumps({"_id": {"statementId": f"{index}"}, "assessmentPeriod": {"contractId": "phoney"}})
 
 
 def overwritten_field(table: str) -> str:

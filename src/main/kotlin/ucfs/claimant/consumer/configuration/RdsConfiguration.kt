@@ -20,7 +20,10 @@ import kotlin.time.ExperimentalTime
 class RdsConfiguration(private val databaseCaCertPath: String,
                        private val claimantTable: String,
                        private val contractTable: String,
-                       private val statementTable: String) {
+                       private val statementTable: String,
+                       private val claimantNaturalIdField: String,
+                       private val contractNaturalIdField: String,
+                       private val statementNaturalIdField: String) {
 
     @ExperimentalTime
     @Bean
@@ -59,7 +62,6 @@ class RdsConfiguration(private val databaseCaCertPath: String,
 
     @Bean
     @Qualifier("naturalIdFields")
-    fun naturalIdFields(claimantTopic: String, contractTopic: String, statementTopic: String,
-                        claimantIdField: String, contractIdField: String, statementIdField: String) =
-            mapOf(claimantTopic to claimantIdField, contractTopic to contractIdField, statementTopic to contractIdField)
+    fun naturalIdFields(claimantTopic: String, contractTopic: String, statementTopic: String) =
+            mapOf(claimantTopic to claimantNaturalIdField, contractTopic to contractNaturalIdField, statementTopic to statementNaturalIdField)
 }

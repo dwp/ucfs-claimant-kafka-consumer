@@ -91,8 +91,9 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             successTarget.upsert(topicPartition, processed.mapNotNull(TransformationProcessingOutput::orNull))
 
 
-    private suspend fun sendDeletes(topic: String, processedDeletes: List<DeleteProcessingOutput>) =
-            successTarget.delete(topic, processedDeletes.mapNotNull(DeleteProcessingOutput::orNull))
+    private suspend fun sendDeletes(topic: String, processedDeletes: List<DeleteProcessingOutput>) {
+        successTarget.delete(topic, processedDeletes.mapNotNull(DeleteProcessingOutput::orNull))
+    }
 
     private fun splitProcessed(additionsAndModifications: List<JsonProcessingResult>) =
             additionsAndModifications.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)

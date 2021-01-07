@@ -16,6 +16,7 @@ import ucfs.claimant.consumer.domain.JsonProcessingResult
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.domain.TransformationResult
 import ucfs.claimant.consumer.processor.CompoundProcessor
+import ucfs.claimant.consumer.processor.DeleteProcessor
 import ucfs.claimant.consumer.processor.PreProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
@@ -27,6 +28,8 @@ import kotlin.time.toJavaDuration
 class OrchestratorImplTest : StringSpec() {
 
     init {
+         // TODO: validate delete is called
+
         "Commit on success, rollback on failure" {
             val batch1 = consumerRecords(0, 99)
             val batch2 = consumerRecords(100, 199)
@@ -46,7 +49,7 @@ class OrchestratorImplTest : StringSpec() {
 
             val successTarget = mock<SuccessTarget> {
                 onBlocking {
-                    send(any(), any())
+                    upsert(any(), any())
                 } doThrow RuntimeException("Failed batch") doAnswer {}
             }
 
@@ -59,10 +62,15 @@ class OrchestratorImplTest : StringSpec() {
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
-                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
+                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
             }
 
-            val consumerService = OrchestratorImpl(provider, Regex(topic), preProcessor, processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
+            val deleteProcessor = mock<DeleteProcessor>()
+            val consumerService = OrchestratorImpl(provider, Regex(topic),
+                preProcessor, processor, deleteProcessor,
+                10.seconds.toJavaDuration(),
+                successTarget, failureTarget)
+
             shouldThrow<RuntimeException> { consumerService.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
             val failedTopicPartition = TopicPartition(topic, 0)
@@ -87,7 +95,7 @@ class OrchestratorImplTest : StringSpec() {
 
             val successTarget = mock<SuccessTarget> {
                 onBlocking {
-                    send(any(), any())
+                    upsert(any(), any())
                 } doAnswer {}
             }
 
@@ -97,7 +105,7 @@ class OrchestratorImplTest : StringSpec() {
             val records = (1..100).map { recordNumber ->
                 when {
                     recordNumber % 2 == 0 -> {
-                        Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
+                        Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
                     }
                     else -> {
                         consumerRecord(recordNumber).left()
@@ -110,10 +118,13 @@ class OrchestratorImplTest : StringSpec() {
             }
 
             val preProcessor = preProcessor(queueRecord)
-            val consumerService = OrchestratorImpl(provider, Regex(topic), preProcessor, processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
+            val deleteProcessor = mock<DeleteProcessor>()
+            val consumerService = OrchestratorImpl(provider, Regex(topic),
+                preProcessor, processor, deleteProcessor,
+                10.seconds.toJavaDuration(), successTarget, failureTarget)
             shouldThrow<RuntimeException> { consumerService.orchestrate() }
             verify(failureTarget, times(10)).send(any())
-            verify(successTarget, times(10)).send(any(), any())
+            verify(successTarget, times(10)).upsert(any(), any())
         }
 
     }

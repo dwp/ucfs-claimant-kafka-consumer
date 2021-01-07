@@ -54,6 +54,12 @@ class RdsConfiguration(private val databaseCaCertPath: String,
     @Bean
     @Qualifier("targetTables")
     fun targetTables(claimantTopic: String, contractTopic: String, statementTopic: String): Map<String, String> =
-        mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
+            mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
 
+
+    @Bean
+    @Qualifier("naturalIdFields")
+    fun naturalIdFields(claimantTopic: String, contractTopic: String, statementTopic: String,
+                        claimantIdField: String, contractIdField: String, statementIdField: String) =
+            mapOf(claimantTopic to claimantIdField, contractTopic to contractIdField, statementTopic to contractIdField)
 }

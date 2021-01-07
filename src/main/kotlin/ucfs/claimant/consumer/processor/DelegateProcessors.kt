@@ -9,6 +9,7 @@ interface DelegateProcessor<I, O> {
 interface SourceRecordProcessor : DelegateProcessor<SourceRecord, SourceRecordProcessingOutput>
 interface ValidationProcessor : DelegateProcessor<SourceRecordProcessingResult, ValidationProcessingOutput>
 interface JsonProcessor : DelegateProcessor<ValidationProcessingResult, JsonProcessingOutput>
+interface DeleteProcessor : DelegateProcessor<JsonProcessingResult, DeleteProcessingOutput>
 interface ExtractionProcessor : DelegateProcessor<JsonProcessingResult, ExtractionProcessingOutput>
 interface DatakeyProcessor : DelegateProcessor<ExtractionProcessingResult, DatakeyProcessingOutput>
 interface DecryptionProcessor : DelegateProcessor<DatakeyProcessingResult, DecryptionProcessingOutput>

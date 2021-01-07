@@ -4,8 +4,10 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.data.forAll
+import io.kotest.data.row
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
+import ucfs.claimant.consumer.domain.DeleteProcessingResult
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.domain.TransformationProcessingResult
 import ucfs.claimant.consumer.domain.TransformationResult
@@ -16,41 +18,66 @@ import javax.sql.DataSource
 
 class RdsTargetTest: StringSpec() {
     init {
-        "Excludes deletes" {
-            val statement = mock<PreparedStatement> {
-                on { setString(any(), any()) } doAnswer {}
-            }
-            val sqlCaptor = argumentCaptor<String>()
-            val conn = mock<Connection> {
-                on {prepareStatement(sqlCaptor.capture())} doReturn statement
-            }
-
-            val dataSource = mock<DataSource> {
-                on {connection} doReturn conn
-            }
-
-            val target = RdsTarget(dataSource, targetTables)
-            val sourceRecord = mock<SourceRecord>()
-
-            val results = (0..99).map {
-                TransformationProcessingResult(sourceRecord, transformationResult(it))
-            }
-
-            target.send(claimantTopic, results)
-            verifyStatementInteractions(statement)
-            verifyConnectionInteractions(conn)
-            verifyDataSourceInteractions(dataSource)
+        "Updates" {
+            forAll (*topics) { validateUpdates(it) }
         }
 
+        "Deletes" {
+            forAll (*topics) { validateDeletes(it) }
+        }
+    }
+
+    private suspend fun validateUpdates(topic: String) {
+        val statement = preparedStatement()
+        val conn = connection(statement)
+        val dataSource = dataSource(conn)
+        val sourceRecord = mock<SourceRecord>()
+        val results = (0..99).map {
+            TransformationProcessingResult(sourceRecord, transformationResult(it))
+        }
+        rdsTarget(dataSource).upsert(topic, results)
+        verifyUpdateStatementInteractions(statement)
+        verifyStatementInteractions(statement)
+        verifyConnectionInteractions(
+            conn,
+            """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?"""
+        )
+        verifyDataSourceInteractions(dataSource)
+    }
+
+    private suspend fun validateDeletes(topic: String) {
+        val statement = preparedStatement()
+        val conn = connection(statement)
+        val dataSource = dataSource(conn)
+        val sourceRecord = mock<SourceRecord>()
+
+        val results = (0..99).map {
+            DeleteProcessingResult(sourceRecord, "$it")
+        }
+
+        rdsTarget(dataSource).delete(topic, results)
+        verifyDeleteStatementInteractions(statement)
+        verifyStatementInteractions(statement)
+        verifyConnectionInteractions(conn, """DELETE FROM ${targetTables[topic]} WHERE ${naturalIds[topic]} = ?""")
+        verifyDataSourceInteractions(dataSource)
     }
 
     private fun verifyStatementInteractions(statement: PreparedStatement) {
+        verify(statement, times(100)).addBatch()
+        verify(statement, times(1)).executeBatch()
+        verify(statement, times(1)).close()
+        verifyNoMoreInteractions(statement)
+    }
+
+    private fun verifyUpdateStatementInteractions(statement: PreparedStatement) {
         val positionCaptor = argumentCaptor<Int>()
         val jsonCaptor = argumentCaptor<String>()
-        verify(statement, times(34 * 2 + 33 * 2)).setString(positionCaptor.capture(), jsonCaptor.capture())
+        verify(statement, times(200)).setString(positionCaptor.capture(), jsonCaptor.capture())
+
         positionCaptor.allValues.forEachIndexed { index, value ->
             value shouldBe index % 2 + 1
         }
+
         jsonCaptor.allValues.asSequence()
             .filterIndexed { index, _ -> index % 2 == 0 }
             .map(::jsonObject)
@@ -59,18 +86,23 @@ class RdsTargetTest: StringSpec() {
             .map(JsonPrimitive::getAsInt)
             .toList()
             .forEachIndexed { index, x ->
-                x % 3 shouldNotBe 2
-                x % 3 shouldBe index % 2
+                x shouldBe index
             }
-
-        verify(statement, times(34 + 33)).addBatch()
-        verify(statement, times(1)).executeBatch()
-        verify(statement, times(1)).close()
-        verifyNoMoreInteractions(statement)
     }
 
-    private fun verifyConnectionInteractions(conn: Connection) {
-        verify(conn, times(1)).prepareStatement("""INSERT INTO claimant (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?""")
+
+    private fun verifyDeleteStatementInteractions(statement: PreparedStatement) {
+        val parameterIndexCaptor = argumentCaptor<Int>()
+        val valueCaptor = argumentCaptor<String>()
+        verify(statement, times(100)).setString(parameterIndexCaptor.capture(), valueCaptor.capture())
+        parameterIndexCaptor.allValues.forEach { it shouldBe 1 }
+        valueCaptor.allValues.forEachIndexed { index, value ->
+            value shouldBe "$index"
+        }
+    }
+
+    private fun verifyConnectionInteractions(conn: Connection, sql: String) {
+        verify(conn, times(1)).prepareStatement(sql)
         verify(conn, times(1)).close()
         verifyNoMoreInteractions(conn)
     }
@@ -81,23 +113,46 @@ class RdsTargetTest: StringSpec() {
     }
 
     private fun transformationResult(index: Int): TransformationResult =
-            TransformationResult(JsonObject(), """{"_id": { "id": $index }}""",
-                when (index % 3) {
-                    0 -> "MONGO_INSERT"
-                    1 -> "MONGO_UPDATE"
-                    else -> "MONGO_DELETE"
-                })
+            TransformationResult(JsonObject(), """{"_id": { "id": $index }}""")
+
+    private fun rdsTarget(dataSource: DataSource): RdsTarget = RdsTarget(dataSource, targetTables, naturalIds)
+
+    private fun dataSource(conn: Connection): DataSource =
+            mock {
+                on { connection } doReturn conn
+            }
+
+    private fun connection(statement: PreparedStatement): Connection =
+            mock {
+                on { prepareStatement(any()) } doReturn statement
+            }
+
+    private fun preparedStatement(): PreparedStatement =
+            mock {
+                on { setString(any(), any()) } doAnswer {}
+                on { executeBatch() } doReturn IntArray(100) { 1 }
+            }
 
     companion object {
+
         private const val claimantTopic = "db.core.claimant"
         private const val contractTopic = "db.core.contract"
         private const val statementTopic = "db.core.statement"
+
+        private val topics = listOf(claimantTopic, contractTopic, statementTopic).map(::row).toTypedArray()
 
         private const val claimantTable = "claimant"
         private const val contractTable = "contract"
         private const val statementTable = "statement"
 
+        private const val claimantNaturalId = "citizenId"
+        private const val contractNaturalId = "contractId"
+        private const val statementNaturalId = "statementId"
+
         val targetTables: Map<String, String> =
             mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
+
+        val naturalIds: Map<String, String> =
+            mapOf(claimantTopic to claimantNaturalId, contractTopic to contractNaturalId, statementTopic to statementNaturalId)
     }
 }

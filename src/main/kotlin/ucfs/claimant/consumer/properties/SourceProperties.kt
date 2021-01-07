@@ -22,4 +22,12 @@ data class SourceProperties(var claimantTopic: String = "db.core.claimant",
     @Bean
     fun statementTopic() = statementTopic
 
+    @Bean
+    fun claimantIdField() = claimantIdField
+
+    @Bean
+    fun contractIdField() = contractIdField
+
+    @Bean
+    fun statementIdField() = statementIdField
 }

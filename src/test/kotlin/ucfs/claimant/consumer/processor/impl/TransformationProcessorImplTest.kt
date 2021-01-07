@@ -51,10 +51,9 @@ class TransformationProcessorImplTest: StringSpec() {
         val sourceRecord = sourceRecord(sourceTopic)
         succeedingProcessor().process(decryptionResult(sourceRecord)) shouldBeRight { (consumerRecord, transformed) ->
             consumerRecord shouldBeSameInstanceAs sourceRecord
-            val (outputJson, transformedDbObject, action) = transformed
+            val (outputJson, transformedDbObject) = transformed
             outputJson.json() shouldMatchJson inputJson
             transformedDbObject shouldBe result
-            action shouldBe "MONGO_INSERT"
         }
     }
 

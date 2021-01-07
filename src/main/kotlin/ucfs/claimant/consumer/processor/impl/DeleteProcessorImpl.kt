@@ -11,17 +11,17 @@ import ucfs.claimant.consumer.utility.FunctionalUtility
 import ucfs.claimant.consumer.utility.GsonExtensions.string
 
 @Component
-class DeleteProcessorImpl(@Qualifier("naturalIdFields") private val naturalIdFields: Map<String, String>): DeleteProcessor {
+class DeleteProcessorImpl(@Qualifier("idSourceFields") private val idSourceFields: Map<String, String>): DeleteProcessor {
     override fun process(record: JsonProcessingResult): DeleteProcessingOutput =
-        naturalIdFields[record.first.topic()].rightIfNotNull {
-            "No natural id configured for topic '${record.first.topic()}'."
-        }.flatMap { naturalIdField ->
+        idSourceFields[record.first.topic()].rightIfNotNull {
+            "No source id configured for topic '${record.first.topic()}'."
+        }.flatMap { sourceId ->
             val (json) = record.second
-            json.string("message", "_id", naturalIdField)
-        }.map { naturalId ->
-            Pair(record.first, naturalId)
+            json.string("message", "_id", sourceId)
+        }.map { sourceId ->
+            Pair(record.first, sourceId)
         }.mapLeft {
-            FunctionalUtility.processingFailure(record.first, it, "Failed to extract natural id")
+            FunctionalUtility.processingFailure(record.first, it, "Failed to extract source id")
         }
 }
 

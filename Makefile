@@ -102,7 +102,7 @@ push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 		docker push $(aws_mgmt_dev_account).dkr.ecr.$(aws_default_region).amazonaws.com/ucfs-claimant-kafka-consumer:$(temp_image_tag); \
 	}
 
-rds_root: ## Get a root session on the  database.
+rds_root: ## Get a root session on the database.
 	docker exec -it rds mysql --user=root --password=password ucfs-claimant
 
 rds_user: ## Get a client session on the database.

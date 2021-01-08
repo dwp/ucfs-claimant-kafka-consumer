@@ -9,10 +9,8 @@ import io.kotest.assertions.arrow.either.shouldBeRight
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
-import ucfs.claimant.consumer.domain.DatabaseAction
-import ucfs.claimant.consumer.domain.EncryptionExtractionResult
-import ucfs.claimant.consumer.domain.EncryptionMetadata
-import ucfs.claimant.consumer.domain.SourceRecord
+import ucfs.claimant.consumer.domain.*
+import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 
 class ExtractionProcessorImplTest : StringSpec() {
     private val encryptedKey = "encryptedEncryptionKey"
@@ -56,7 +54,8 @@ class ExtractionProcessorImplTest : StringSpec() {
             val queueRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }
-            val result = ExtractionProcessorImpl().process(Pair(queueRecord, Pair(json ,DatabaseAction.MONGO_INSERT)))
+            val result = ExtractionProcessorImpl().process(Pair(queueRecord,
+                JsonProcessingExtract(json, "id", DatabaseAction.MONGO_INSERT, Pair("date", "dateSource"))))
             result shouldBeLeft queueRecord
         }
 
@@ -88,11 +87,13 @@ class ExtractionProcessorImplTest : StringSpec() {
     }
 
     private fun validateRight(json: JsonObject) {
-        val queueRecord = mock<SourceRecord>()
-        val result = ExtractionProcessorImpl().process(Pair(queueRecord, Pair(json, DatabaseAction.MONGO_INSERT)))
+        val queueRecord = mock<SourceRecord> {
+            on { key() } doReturn "key".toByteArray()
+        }
+        val result = ExtractionProcessorImpl().process(Pair(queueRecord, jsonProcessingExtract(json)))
         result shouldBeRight { (record, result) ->
             record shouldBeSameInstanceAs queueRecord
-            result shouldBe EncryptionExtractionResult(json, EncryptionMetadata(encryptingKeyId,
+            result shouldBe EncryptionExtractionResult(jsonProcessingExtract(json), EncryptionMetadata(encryptingKeyId,
                     encryptedKey, initialisationVector))
         }
     }
@@ -102,7 +103,8 @@ class ExtractionProcessorImplTest : StringSpec() {
         val queueRecord = mock<SourceRecord> {
             on { key() } doReturn "key".toByteArray()
         }
-        val result = ExtractionProcessorImpl().process(Pair(queueRecord, Pair(json, DatabaseAction.MONGO_UPDATE)))
+        val result = ExtractionProcessorImpl().process(Pair(queueRecord,
+            JsonProcessingExtract(json, "id", DatabaseAction.MONGO_UPDATE,Pair("date", "dateSource"))))
         result shouldBeLeft queueRecord
     }
 

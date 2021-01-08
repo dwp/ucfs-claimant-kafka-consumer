@@ -21,7 +21,7 @@ class TransformationProcessorImpl(@Qualifier("transformers") private val transfo
             record.second.plainText.jsonObject().flatMap {
                 transformed(record.first.topic(), it)
             }.map { transformed ->
-                Pair(record.first, TransformationResult(record.second.json, transformed))
+                Pair(record.first, TransformationResult(record.second.extract, transformed))
             }.mapLeft {
                 FunctionalUtility.processingFailure(record.first, it,"Failed to transform dbObject from '${record.first.topic()}'.")
             }

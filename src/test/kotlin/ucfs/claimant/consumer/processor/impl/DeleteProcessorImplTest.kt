@@ -12,7 +12,12 @@ import io.kotest.data.row
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import ucfs.claimant.consumer.domain.DatabaseAction
+import ucfs.claimant.consumer.domain.JsonProcessingExtract
 import ucfs.claimant.consumer.domain.SourceRecord
+import ucfs.claimant.consumer.processor.impl.SourceData.claimantTopic
+import ucfs.claimant.consumer.processor.impl.SourceData.contractTopic
+import ucfs.claimant.consumer.processor.impl.SourceData.idSourceFields
+import ucfs.claimant.consumer.processor.impl.SourceData.statementTopic
 
 class DeleteProcessorImplTest: StringSpec() {
     init {
@@ -39,7 +44,8 @@ class DeleteProcessorImplTest: StringSpec() {
     private fun topics() = listOf(claimantTopic, contractTopic, statementTopic).map(::row).toTypedArray()
 
     private fun jsonProcessingResult(sourceRecord: SourceRecord,input: JsonObject) =
-        Pair(sourceRecord, Pair(input, DatabaseAction.MONGO_DELETE))
+        Pair(sourceRecord, JsonProcessingExtract(input, "id",
+                                                DatabaseAction.MONGO_DELETE, Pair("date", "dateSource")))
 
     private fun deleteProcessor(): DeleteProcessorImpl = DeleteProcessorImpl(idSourceFields)
 
@@ -62,16 +68,4 @@ class DeleteProcessorImplTest: StringSpec() {
             on { topic() } doReturn topic
         }
 
-    companion object {
-        private const val claimantTopic = "db.core.claimant"
-        private const val contractTopic = "db.core.contract"
-        private const val statementTopic = "db.core.statement"
-
-        private const val claimantIdSourceField = "citizenId"
-        private const val contractIdSourceField = "contractId"
-        private const val statementIdSourceField = "statementId"
-
-        private val idSourceFields =
-            mapOf(claimantTopic to claimantIdSourceField, contractTopic to contractIdSourceField, statementTopic to statementIdSourceField)
-    }
 }

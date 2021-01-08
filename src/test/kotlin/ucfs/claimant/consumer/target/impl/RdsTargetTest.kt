@@ -1,16 +1,16 @@
 package ucfs.claimant.consumer.target.impl
 
-import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
-import ucfs.claimant.consumer.domain.DeleteProcessingResult
+import ucfs.claimant.consumer.domain.JsonProcessingResult
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.domain.TransformationProcessingResult
 import ucfs.claimant.consumer.domain.TransformationResult
+import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 import ucfs.claimant.consumer.transformer.impl.GsonTestUtility.jsonObject
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -52,7 +52,7 @@ class RdsTargetTest: StringSpec() {
         val sourceRecord = mock<SourceRecord>()
 
         val results = (0..99).map {
-            DeleteProcessingResult(sourceRecord, "$it")
+            JsonProcessingResult(sourceRecord, jsonProcessingExtract(id = "$it"))
         }
 
         rdsTarget(dataSource).delete(topic, results)
@@ -113,7 +113,7 @@ class RdsTargetTest: StringSpec() {
     }
 
     private fun transformationResult(index: Int): TransformationResult =
-            TransformationResult(JsonObject(), """{"_id": { "id": $index }}""")
+            TransformationResult(jsonProcessingExtract(), """{"_id": { "id": $index }}""")
 
     private fun rdsTarget(dataSource: DataSource): RdsTarget = RdsTarget(dataSource, targetTables, naturalIds)
 

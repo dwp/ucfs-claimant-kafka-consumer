@@ -13,6 +13,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import ucfs.claimant.consumer.domain.DatabaseAction
 import ucfs.claimant.consumer.domain.SourceRecord
+import ucfs.claimant.consumer.processor.impl.SourceData.claimantIdSourceField
+import ucfs.claimant.consumer.processor.impl.SourceData.claimantTopic
+import ucfs.claimant.consumer.processor.impl.SourceData.idSourceFields
 
 class JsonProcessorImplTest : StringSpec() {
     init {
@@ -21,18 +24,31 @@ class JsonProcessorImplTest : StringSpec() {
                 val json = """
                 {
                     "message": {
+                        "_lastModifiedDateTime": "2020-12-12",
                         "dbObject": "ENCRYPTED_OBJECT",
-                        "@type": "$databaseAction"
+                        "@type": "$databaseAction",
+                        "_id": {
+                            "$claimantIdSourceField": "123"
+                        },
+                        "timestamp": "2020-01-01"
                     }
                 }""".trimIndent()
 
-                val queueRecord = mock<SourceRecord>()
-                val result = JsonProcessorImpl().process(Pair(queueRecord, json))
+                val sourceRecord = sourceRecord()
+
+                val result = JsonProcessorImpl(idSourceFields).process(Pair(sourceRecord, json))
                 result shouldBeRight { (record, result) ->
-                    val (jsonObject, action) = result
+                    val (jsonObject, id, action, timestampAndSource) = result
                     Gson().toJson(jsonObject) shouldMatchJson json
-                    record shouldBeSameInstanceAs queueRecord
+                    record shouldBeSameInstanceAs sourceRecord
+                    id shouldBe "123"
                     action shouldBe databaseAction
+                    if (action == DatabaseAction.MONGO_DELETE) {
+                        timestampAndSource shouldBe Pair("1980-01-01T00:00:00.000+0000", "epoch")
+                    }
+                    else {
+                        timestampAndSource shouldBe Pair("2020-12-12", "_lastModifiedDateTime")
+                    }
                 }
             }
         }
@@ -46,10 +62,8 @@ class JsonProcessorImplTest : StringSpec() {
                 }
             }""".trimIndent()
 
-            val sourceRecord = mock<SourceRecord> {
-                on { key() } doReturn "key".toByteArray()
-            }
-            val result = JsonProcessorImpl().process(Pair(sourceRecord, json))
+            val sourceRecord = sourceRecord()
+            val result = JsonProcessorImpl(idSourceFields).process(Pair(sourceRecord, json))
             result shouldBeLeft {
                 it shouldBeSameInstanceAs sourceRecord
             }
@@ -66,7 +80,7 @@ class JsonProcessorImplTest : StringSpec() {
             val sourceRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }
-            val result = JsonProcessorImpl().process(Pair(sourceRecord, json))
+            val result = JsonProcessorImpl(idSourceFields).process(Pair(sourceRecord, json))
             result shouldBeLeft {
                 it shouldBeSameInstanceAs sourceRecord
             }
@@ -82,12 +96,18 @@ class JsonProcessorImplTest : StringSpec() {
             val record = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }
-            val result = JsonProcessorImpl().process(Pair(record, json))
+            val result = JsonProcessorImpl(idSourceFields).process(Pair(record, json))
             result shouldBeLeft {
                 it shouldBeSameInstanceAs record
             }
         }
     }
+
+    private fun sourceRecord(): SourceRecord =
+            mock {
+                on { topic() } doReturn claimantTopic
+                on { key() } doReturn "key".toByteArray()
+            }
 
     companion object {
         private val databaseActions = DatabaseAction.values().map(::row).toTypedArray()

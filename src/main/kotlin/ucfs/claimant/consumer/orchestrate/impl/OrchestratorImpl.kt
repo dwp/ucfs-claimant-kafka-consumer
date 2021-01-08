@@ -79,10 +79,9 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                 val (successfullySourced, failedPreprocessing) = splitPreprocessed(records)
                 val (additionsAndModifications, deletes) = splitActions(successfullySourced)
                 val (processed, failedProcessing) = splitProcessed(additionsAndModifications)
-                val (processedDeletes, failedDeleteProcessing) = splitDeletes(deletes)
-                sendFailures(failedPreprocessing + failedProcessing + failedDeleteProcessing)
+                sendFailures(failedPreprocessing + failedProcessing)
                 sendAdditionsAndModifications(topicPartition.topic(), processed)
-                sendDeletes(topicPartition.topic(), processedDeletes)
+                sendDeletes(topicPartition.topic(), deletes)
             }
 
 
@@ -91,8 +90,8 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             successTarget.upsert(topicPartition, processed.mapNotNull(TransformationProcessingOutput::orNull))
 
 
-    private suspend fun sendDeletes(topic: String, processedDeletes: List<DeleteProcessingOutput>) {
-        successTarget.delete(topic, processedDeletes.mapNotNull(DeleteProcessingOutput::orNull))
+    private suspend fun sendDeletes(topic: String, deletes: List<JsonProcessingResult>) {
+        successTarget.delete(topic, deletes)
     }
 
     private fun splitProcessed(additionsAndModifications: List<JsonProcessingResult>) =
@@ -102,8 +101,8 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             deletes.map(deleteProcessor::process).partition(DeleteProcessingOutput::isRight)
 
     private fun splitActions(sourced: List<JsonProcessingOutput>) =
-            sourced.mapNotNull(JsonProcessingOutput::orNull).partition { (_, result) ->
-                result.second != DatabaseAction.MONGO_DELETE
+            sourced.mapNotNull(JsonProcessingOutput::orNull).partition { (_, extract) ->
+                extract.action != DatabaseAction.MONGO_DELETE
             }
 
     private fun splitPreprocessed(records: List<ConsumerRecord<ByteArray, ByteArray>>) =

@@ -2,7 +2,8 @@ package ucfs.claimant.consumer.target.impl
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import ucfs.claimant.consumer.domain.DeleteProcessingResult
+import ucfs.claimant.consumer.domain.JsonProcessingExtract
+import ucfs.claimant.consumer.domain.JsonProcessingResult
 import ucfs.claimant.consumer.domain.TransformationProcessingResult
 import ucfs.claimant.consumer.target.SuccessTarget
 import uk.gov.dwp.dataworks.logging.DataworksLogger
@@ -27,34 +28,48 @@ class RdsTarget(private val dataSource: DataSource,
         }
     }
 
-    override suspend fun delete(topic: String, records: List<DeleteProcessingResult>) {
+    override suspend fun delete(topic: String, records: List<JsonProcessingResult>) {
         dataSource.connection.use { connection ->
             connection.prepareStatement(deleteSql(topic)).use { statement ->
-                records.map(DeleteProcessingResult::second).let { ids ->
+                records.map(JsonProcessingResult::second).map(JsonProcessingExtract::id).let { ids ->
                     ids.forEach { naturalId ->
                         statement.setString(1, naturalId)
                         statement.addBatch()
                     }
                     val results = statement.executeBatch()
-                    logDeletes(ids, results, topic)
+                    logDeletes(records, results, topic)
                 }
             }
         }
     }
 
-    private fun logDeletes(ids: List<String>, results: IntArray, topic: String) {
+    private fun logDeletes(ids: List<JsonProcessingResult>, results: IntArray, topic: String) {
         val (found, notFound) = ids.zip(results.asList()).partition{ (_, rowCount) ->
             rowCount > 0
         }
 
-        found.forEach {
-            log.info("Deleted record", "topic" to topic, "table" to "${targetTables[topic]}",
-                "id" to it.first, "rows_updated" to "${it.second}")
+
+        found.forEach { (result, count) ->
+            val (_, extract) = result
+
+            log.info("Deleted record","topic" to topic,
+                "table" to "${targetTables[topic]}",
+                "id" to extract.id,
+                "action" to "${extract.action}",
+                "timestamp" to extract.timestampAndSource.first,
+                "timestampSource" to extract.timestampAndSource.second,
+                "rows_updated" to "$count")
         }
 
-        notFound.forEach {
-            log.warn("Failed to delete record, no rows updated","topic" to topic, "table" to "${targetTables[topic]}",
-                "id" to it.first, "rows_updated" to "${it.second}")
+        notFound.forEach { (result, count) ->
+            val (_, extract) = result
+            log.warn("Failed to delete record, no rows updated","topic" to topic,
+                "table" to "${targetTables[topic]}",
+                "id" to extract.id,
+                "action" to "${extract.action}",
+                "timestamp" to extract.timestampAndSource.first,
+                "timestampSource" to extract.timestampAndSource.second,
+                "rows_updated" to "$count")
         }
     }
 

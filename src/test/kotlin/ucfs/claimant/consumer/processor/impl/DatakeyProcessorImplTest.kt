@@ -2,7 +2,6 @@ package ucfs.claimant.consumer.processor.impl
 
 import arrow.core.left
 import arrow.core.right
-import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
@@ -17,6 +16,7 @@ import ucfs.claimant.consumer.domain.EncryptionExtractionResult
 import ucfs.claimant.consumer.domain.EncryptionMetadata
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.exception.DataKeyServiceUnavailableException
+import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 import ucfs.claimant.consumer.repository.DecryptingDataKeyRepository
 
 class DatakeyProcessorImplTest : StringSpec() {
@@ -32,7 +32,7 @@ class DatakeyProcessorImplTest : StringSpec() {
             val result = processor.process(Pair(queueRecord, input))
             result shouldBeRight { (record, result) ->
                 record shouldBeSameInstanceAs queueRecord
-                result shouldBe DataKeyResult(JsonObject(), initialisationVector, decryptedKey)
+                result shouldBe DataKeyResult(jsonProcessingExtract(), initialisationVector, decryptedKey)
             }
         }
 
@@ -67,8 +67,7 @@ class DatakeyProcessorImplTest : StringSpec() {
     }
 
     private fun encryptionExtractionResult(): EncryptionExtractionResult =
-            EncryptionExtractionResult(JsonObject(),
-                    EncryptionMetadata(encryptingKeyId, encryptedKey, initialisationVector))
+            EncryptionExtractionResult(jsonProcessingExtract(), EncryptionMetadata(encryptingKeyId, encryptedKey, initialisationVector))
 
     private val encryptingKeyId = "encryptingKeyId"
     private val encryptedKey = "encryptedKey"

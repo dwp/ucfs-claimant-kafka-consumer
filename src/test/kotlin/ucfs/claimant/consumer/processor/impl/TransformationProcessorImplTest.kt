@@ -19,6 +19,7 @@ import ucfs.claimant.consumer.domain.DecryptionProcessingResult
 import ucfs.claimant.consumer.domain.DecryptionResult
 import ucfs.claimant.consumer.domain.SourceRecord
 import ucfs.claimant.consumer.processor.TransformationProcessor
+import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 import ucfs.claimant.consumer.transformer.Transformer
 import ucfs.claimant.consumer.utility.GsonExtensions.json
 
@@ -52,7 +53,7 @@ class TransformationProcessorImplTest: StringSpec() {
         succeedingProcessor().process(decryptionResult(sourceRecord)) shouldBeRight { (consumerRecord, transformed) ->
             consumerRecord shouldBeSameInstanceAs sourceRecord
             val (outputJson, transformedDbObject) = transformed
-            outputJson.json() shouldMatchJson inputJson
+            outputJson.jsonObject.json() shouldMatchJson inputJson
             transformedDbObject shouldBe result
         }
     }
@@ -104,6 +105,6 @@ class TransformationProcessorImplTest: StringSpec() {
         private const val statementResult: String = "statement"
         private const val inputJson: String = """{ "message": { "@type": "MONGO_INSERT" } }"""
         private val jsonObject = Gson().fromJson(inputJson, JsonObject::class.java)
-        private val decryptionResult = DecryptionResult(jsonObject, """{ "_id": { "id": "123"} }""")
+        private val decryptionResult = DecryptionResult(jsonProcessingExtract(jsonObject), """{ "_id": { "id": "123"} }""")
     }
 }

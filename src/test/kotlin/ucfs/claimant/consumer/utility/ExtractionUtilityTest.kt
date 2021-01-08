@@ -10,16 +10,16 @@ import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import ucfs.claimant.consumer.utility.ExtractionUtility.timestamp
 
-class TimestampUtilityTest: StringSpec() {
+class ExtractionUtilityTest: StringSpec() {
     init {
-        "Left when no action" {
+        "Timestamp returns left when no action" {
             forAll(*sourceFields()) { sourceField ->
-                val x = jsonObject("""{ 
+                jsonObject("""{ 
                         "message": { "$sourceField": "2020-01-02" },
                         "timestamp": "2020-05-06"
-                    }""".trimIndent())
-                TimestampUtility.timestamp(x).shouldBeLeft {
+                    }""").timestamp().shouldBeLeft {
                     it.shouldBeInstanceOf<Pair<JsonObject, String>>()
                     val (jsonObject, field) = it
                     gson.toJson(jsonObject) shouldMatchJson """{ "$sourceField": "2020-01-02" }"""
@@ -28,87 +28,78 @@ class TimestampUtilityTest: StringSpec() {
             }
         }
 
-        "Left when unknown action" {
+        "Timestamp returns left when unknown action" {
             forAll(*sourceFields()) { sourceField ->
-                val x = jsonObject("""{ 
+                jsonObject("""{ 
                     "message": { 
                         "$sourceField": "2020-01-02",
                          "@type": "MONGO_JERRY"
                     },
-                    "timestamp": "2020-05-06"
-                }""".trimIndent())
-                TimestampUtility.timestamp(x).shouldBeLeft {
+                    "timestamp": "2020-05-06"}""").timestamp().shouldBeLeft {
                     it.shouldBeInstanceOf<Exception>()
                 }
             }
         }
 
-        "Extracts _lastModifiedDateTime when insert or update and field present" {
+        "Timestamp returns _lastModifiedDateTime when insert or update and field present" {
             forAll(*actions()) { action ->
-                val x = jsonObject("""{
+                jsonObject("""{
                     "message": {
                         "$LAST_MODIFIED_TIMESTAMP_FIELD": "2020-01-02",
                         "@type": "$action"
                     }
-                }""".trimIndent())
-                TimestampUtility.timestamp(x).shouldBeRight { (date, source) ->
+                }""").timestamp().shouldBeRight { (date, source) ->
                     date shouldBe "2020-01-02"
                     source shouldBe "_lastModifiedDateTime"
                 }
             }
         }
 
-        "Epoch when insert or update and no fields present" {
+        "Timestamp returns epoch when insert or update and no fields present" {
             forAll(*actions()) { action ->
-                val x = jsonObject("""{
+                validateEpoch(jsonObject("""{
                     "message": {
                         "@type": "$action"
                     }
-                }""".trimIndent())
-                validateEpoch(x)
+                }"""))
             }
         }
 
-        "Epoch when insert or update and enqueued date present" {
+        "Timestamp returns epoch when insert or update and enqueued date present" {
             forAll(*actions()) { action ->
-                val x = jsonObject("""{
+                validateEpoch(jsonObject("""{
                     "message": {
                         "@type": "$action"
                     },
                     "timestamp": "2020-05-06"
-                }""".trimIndent())
-                validateEpoch(x)
+                }"""))
             }
         }
 
-        "createdDateTime when insert or update and lastModifiedDateTime not present" {
+        "Timestamp returns createdDateTime when insert or update and lastModifiedDateTime not present" {
             forAll(*actions()) { action ->
-                val x = jsonObject("""{
+                jsonObject("""{
                     "message": {
                         "$CREATED_TIMESTAMP_FIELD": "2020-01-02",
                         "@type": "$action"
                     }
-                }""".trimIndent())
-
-                TimestampUtility.timestamp(x).shouldBeRight { (date, source) ->
+                }""").timestamp().shouldBeRight { (date, source) ->
                     date shouldBe "2020-01-02"
                     source shouldBe "createdDateTime"
                 }
             }
         }
 
-        "_lastModifiedDateTime when insert or update and all timestamp fields present" {
+        "Timestamp returns _lastModifiedDateTime when insert or update and all timestamp fields present" {
             forAll(*actions()) { action ->
-                val x = jsonObject("""{
+                jsonObject("""{
                     "message": {
                         "$LAST_MODIFIED_TIMESTAMP_FIELD": "2020-01-02",
                         "$CREATED_TIMESTAMP_FIELD": "2020-01-03",
                         "@type": "$action"
                     },
                     "$ENQUEUED_TIMESTAMP_FIELD": "2020-03-04" 
-                }""".trimIndent())
-
-                TimestampUtility.timestamp(x).shouldBeRight { (date, source) ->
+                }""").timestamp().shouldBeRight { (date, source) ->
                     date shouldBe "2020-01-02"
                     source shouldBe "_lastModifiedDateTime"
                 }
@@ -116,38 +107,34 @@ class TimestampUtilityTest: StringSpec() {
         }
 
 
-        "Enqueued date when delete and enqueued date present" {
-            val x = jsonObject("""{
+        "Timestamp returns enqueued date when delete and enqueued date present" {
+            jsonObject("""{
                 "message": {
                     "$LAST_MODIFIED_TIMESTAMP_FIELD": "2020-01-02",
                     "$CREATED_TIMESTAMP_FIELD": "2020-01-03",
                     "@type": "$DELETE_ACTION"
                 },
                 "$ENQUEUED_TIMESTAMP_FIELD": "2020-03-04" 
-            }""".trimIndent())
-
-            TimestampUtility.timestamp(x).shouldBeRight { (date, source) ->
+            }""").timestamp().shouldBeRight { (date, source) ->
                 date shouldBe "2020-03-04"
                 source shouldBe ENQUEUED_TIMESTAMP_FIELD
             }
         }
 
-        "Epoch when delete and enqueued date not present" {
-            val x = jsonObject("""{
+        "Timestamp returns epoch when delete and enqueued date not present" {
+            validateEpoch(jsonObject("""{
                 "message": {
                     "$LAST_MODIFIED_TIMESTAMP_FIELD": "2020-01-02",
                     "$CREATED_TIMESTAMP_FIELD": "2020-01-03",
                     "@type": "$DELETE_ACTION"
                 } 
-            }""".trimIndent())
-
-            validateEpoch(x)
+            }"""))
         }
 
     }
 
     private fun validateEpoch(x: JsonObject) {
-        TimestampUtility.timestamp(x).shouldBeRight { (date, source) ->
+        x.timestamp().shouldBeRight { (date, source) ->
             date shouldBe EPOCH
             source shouldBe EPOCH_INDICATOR
         }

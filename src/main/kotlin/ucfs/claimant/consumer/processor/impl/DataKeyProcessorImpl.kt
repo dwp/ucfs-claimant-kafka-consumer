@@ -14,6 +14,6 @@ class DataKeyProcessorImpl(private val decryptingDataKeyRepository: DecryptingDa
             decryptingDataKeyRepository.decryptDataKey(
                 record.second.encryptionMetadata.encryptingKeyId,
                 record.second.encryptionMetadata.encryptedKey).map { datakey ->
-                Pair(record.first, DataKeyResult(record.second.json, record.second.encryptionMetadata.initialisationVector, datakey))
+                Pair(record.first, DataKeyResult(record.second.extract, record.second.encryptionMetadata.initialisationVector, datakey))
             }.mapLeft { processingFailure(record.first, it, "Failed to decrypt datakey") }
 }

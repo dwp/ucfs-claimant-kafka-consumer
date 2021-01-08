@@ -56,7 +56,9 @@ class OrchestratorImplTest : StringSpec() {
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
-                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
+                } doReturn Pair(queueRecord, TransformationResult(
+                     JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE, Pair("2020-01-01", "_lastModifiedDateTime")),
+                    "TRANSFORMED_DB_OBJECT")).right()
             }
 
             val deleteProcessor = mock<DeleteProcessor>()
@@ -115,7 +117,9 @@ class OrchestratorImplTest : StringSpec() {
         (1..100).map { recordNumber ->
             when {
                 recordNumber % 2 == 0 -> {
-                    Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT")).right()
+                    Pair(queueRecord, TransformationResult(
+                        JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE,
+                            Pair("2020-01-01", "_lastModifiedDateTime")), "TRANSFORMED_DB_OBJECT")).right()
                 }
                 else -> {
                     consumerRecord(recordNumber).left()
@@ -154,7 +158,10 @@ class OrchestratorImplTest : StringSpec() {
         return mock {
             on {
                 process(any())
-            } doReturn JsonProcessingResult(sourceRecord, Pair(JsonObject(), DatabaseAction.MONGO_INSERT)).right()
+            } doReturn JsonProcessingResult(sourceRecord,
+                JsonProcessingExtract(JsonObject(), "id",
+                                        DatabaseAction.MONGO_INSERT,
+                                        Pair("date", "datesource"))).right()
         }
     }
 

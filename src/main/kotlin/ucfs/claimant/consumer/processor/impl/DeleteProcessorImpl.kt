@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component
 import ucfs.claimant.consumer.domain.DeleteProcessingOutput
 import ucfs.claimant.consumer.domain.JsonProcessingResult
 import ucfs.claimant.consumer.processor.DeleteProcessor
+import ucfs.claimant.consumer.utility.ExtractionUtility.id
 import ucfs.claimant.consumer.utility.FunctionalUtility
-import ucfs.claimant.consumer.utility.GsonExtensions.string
 
 @Component
 class DeleteProcessorImpl(@Qualifier("idSourceFields") private val idSourceFields: Map<String, String>): DeleteProcessor {
@@ -17,7 +17,7 @@ class DeleteProcessorImpl(@Qualifier("idSourceFields") private val idSourceField
             "No source id configured for topic '${record.first.topic()}'."
         }.flatMap { sourceId ->
             val (json) = record.second
-            json.string("message", "_id", sourceId)
+            json.id(sourceId)
         }.map { sourceId ->
             Pair(record.first, sourceId)
         }.mapLeft {

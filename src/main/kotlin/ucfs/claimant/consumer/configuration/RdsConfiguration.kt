@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.extensions.either.applicative.applicative
 import arrow.core.fix
 import arrow.core.flatMap
+import arrow.core.identity
 import org.apache.commons.dbcp2.BasicDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -49,7 +50,7 @@ class RdsConfiguration(private val databaseCaCertPath: String,
                 }
             }
         }.fold(
-            ifRight = { it },
+            ifRight = ::identity,
             ifLeft = {
                 throw RuntimeException("Failed to parse required connection parameters from secret '$rdsSecretName' value")
             })

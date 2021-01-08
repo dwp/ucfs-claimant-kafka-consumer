@@ -43,8 +43,17 @@ class RdsTarget(private val dataSource: DataSource,
     }
 
     private fun logDeletes(ids: List<String>, results: IntArray, topic: String) {
-        ids.zip(results.asList()).forEach {
-            log.info("Deleted record", "table" to "${targetTables[topic]}",
+        val (found, notFound) = ids.zip(results.asList()).partition{ (_, rowCount) ->
+            rowCount > 0
+        }
+
+        found.forEach {
+            log.info("Deleted record", "topic" to topic, "table" to "${targetTables[topic]}",
+                "id" to it.first, "rows_updated" to "${it.second}")
+        }
+
+        notFound.forEach {
+            log.warn("Failed to delete record, no rows updated","topic" to topic, "table" to "${targetTables[topic]}",
                 "id" to it.first, "rows_updated" to "${it.second}")
         }
     }

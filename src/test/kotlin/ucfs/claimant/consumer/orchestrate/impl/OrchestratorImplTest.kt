@@ -60,8 +60,7 @@ class OrchestratorImplTest : StringSpec() {
             }
 
             val deleteProcessor = mock<DeleteProcessor>()
-            val orchestrator =
-                orchestrator(provider, preProcessor, processor, deleteProcessor, successTarget, failureTarget)
+            val orchestrator = orchestrator(provider, preProcessor, processor, deleteProcessor, successTarget, failureTarget)
 
             shouldThrow<RuntimeException> { orchestrator.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
@@ -89,11 +88,7 @@ class OrchestratorImplTest : StringSpec() {
 
             verify(failureTarget, times(10)).send(any())
             verify(successTarget, times(10)).upsert(any(), any())
-
-            val topicCaptor = argumentCaptor<String>()
-            val deleteCaptor = argumentCaptor<DeleteProcessingResult>()
-
-            verify(successTarget, times(10)).delete(topicCaptor.capture(), any())
+            verify(successTarget, times(10)).delete(any(), any())
         }
 
     }
@@ -124,21 +119,6 @@ class OrchestratorImplTest : StringSpec() {
                 }
                 else -> {
                     consumerRecord(recordNumber).left()
-                }
-            }
-        }
-
-    private fun preProcessingOutputs(queueRecord: SourceRecord) =
-        (1..100).map { recordNumber ->
-            when (recordNumber % 3) {
-                0 -> {
-                    Pair(queueRecord, Pair(JsonObject(), DatabaseAction.MONGO_DELETE)).right()
-                }
-                1 -> {
-                    Pair(queueRecord, Pair(JsonObject(), DatabaseAction.MONGO_INSERT)).right()
-                }
-                else -> {
-                    Pair(queueRecord, Pair(JsonObject(), DatabaseAction.MONGO_UPDATE)).right()
                 }
             }
         }

@@ -1,6 +1,5 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
-import arrow.core.left
 import arrow.core.right
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.*
@@ -22,7 +21,7 @@ import kotlin.time.seconds
 import kotlin.time.toJavaDuration
 
 @ExperimentalTime
-class OrchestratorImplTest : StringSpec() {
+class OrchestratorCommitTest : StringSpec() {
 
     init {
         "Commit on success, rollback on failure" {
@@ -55,9 +54,7 @@ class OrchestratorImplTest : StringSpec() {
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
-                } doReturn Pair(queueRecord, TransformationResult(
-                     JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE, Pair("2020-01-01", "_lastModifiedDateTime")),
-                    "TRANSFORMED_DB_OBJECT")).right()
+                } doReturn Pair(queueRecord, transformationResult()).right()
             }
 
             val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget)
@@ -74,45 +71,11 @@ class OrchestratorImplTest : StringSpec() {
             verifyNoMoreInteractions(consumer)
         }
 
-        "Sends updates, deletes to success target, writes failures to the dlq" {
-            val provider = consumerProvider()
-            val successTarget = successTarget()
-            val failureTarget = mock<FailureTarget>()
-            val processor = compoundProcessor()
-            val preProcessor = preProcessor()
-
-            with (orchestrator(provider, preProcessor, processor, successTarget, failureTarget)) {
-                shouldThrow<RuntimeException> { orchestrate() }
-            }
-
-            verify(failureTarget, times(10)).send(any())
-            verify(successTarget, times(10)).upsert(any(), any())
-            verify(successTarget, times(10)).delete(any(), any())
-        }
-
     }
 
-    private fun compoundProcessor(): CompoundProcessor {
-        val sourceRecord = mock<SourceRecord>()
-        val records = processingOutputs(sourceRecord)
-        return mock {
-            on { process(any()) } doReturnConsecutively records
-        }
-    }
-
-    private fun processingOutputs(queueRecord: SourceRecord) =
-        (1..100).map { recordNumber ->
-            when {
-                recordNumber % 2 == 0 -> {
-                    Pair(queueRecord, TransformationResult(
-                        JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE,
-                            Pair("2020-01-01", "_lastModifiedDateTime")), "TRANSFORMED_DB_OBJECT")).right()
-                }
-                else -> {
-                    consumerRecord(recordNumber).left()
-                }
-            }
-        }
+    private fun transformationResult() = TransformationResult(
+        JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE, Pair("2020-01-01", "_lastModifiedDateTime")),
+        "TRANSFORMED_DB_OBJECT")
 
     private fun orchestrator(
         provider: () -> KafkaConsumer<ByteArray, ByteArray>,
@@ -123,21 +86,6 @@ class OrchestratorImplTest : StringSpec() {
             OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
                             10.seconds.toJavaDuration(), successTarget, failureTarget)
 
-    private fun successTarget(): SuccessTarget = mock {
-        onBlocking {
-            upsert(any(), any())
-        } doAnswer {}
-    }
-
-    private fun consumerProvider(): () -> KafkaConsumer<ByteArray, ByteArray> {
-        val batch = consumerRecords(0, 100)
-        val consumer = mock<KafkaConsumer<ByteArray, ByteArray>> {
-            on { poll(any<Duration>()) } doReturn batch doThrow RuntimeException("End the loop")
-            on { listTopics() } doReturn mapOf(topic to listOf(mock()))
-            on { subscription() } doReturn setOf(topic)
-        }
-        return { consumer }
-    }
 
     private fun preProcessor(): PreProcessor {
         val sourceRecord = mock<SourceRecord>()

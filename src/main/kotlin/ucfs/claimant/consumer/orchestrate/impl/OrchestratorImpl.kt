@@ -55,8 +55,9 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
         }
     }
 
+
     private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<ConsumerRecord<ByteArray, ByteArray>>) =
-            sendToTargets(records, topicPartition).fold(
+            sendToTargets(records, topicPartition.topic()).fold(
                 ifRight = {
                     lastPosition(records).let { lastPosition ->
                         logger.info("Processed batch, committing offset",
@@ -72,14 +73,14 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                     rollback(topicPartition)
                 })
 
-   private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topicPartition: TopicPartition) =
+   private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topic: String) =
             Either.catch {
                 val (successfullySourced, failedPreprocessing) = splitPreprocessed(records)
                 val (additionsAndModifications, deletes) = splitActions(successfullySourced)
                 val (processed, failedProcessing) = splitProcessed(additionsAndModifications)
                 sendFailures(failedPreprocessing + failedProcessing)
-                sendAdditionsAndModifications(topicPartition.topic(), processed)
-                sendDeletes(topicPartition.topic(), deletes)
+                sendAdditionsAndModifications(topic, processed)
+                sendDeletes(topic, deletes)
             }
 
 

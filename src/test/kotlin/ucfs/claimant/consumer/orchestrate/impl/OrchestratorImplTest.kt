@@ -13,7 +13,6 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
 import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.processor.CompoundProcessor
-import ucfs.claimant.consumer.processor.DeleteProcessor
 import ucfs.claimant.consumer.processor.PreProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
@@ -61,8 +60,7 @@ class OrchestratorImplTest : StringSpec() {
                     "TRANSFORMED_DB_OBJECT")).right()
             }
 
-            val deleteProcessor = mock<DeleteProcessor>()
-            val orchestrator = orchestrator(provider, preProcessor, processor, deleteProcessor, successTarget, failureTarget)
+            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget)
 
             shouldThrow<RuntimeException> { orchestrator.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
@@ -82,9 +80,8 @@ class OrchestratorImplTest : StringSpec() {
             val failureTarget = mock<FailureTarget>()
             val processor = compoundProcessor()
             val preProcessor = preProcessor()
-            val deleteProcessor = deleteProcessor()
 
-            with (orchestrator(provider, preProcessor, processor, deleteProcessor, successTarget, failureTarget)) {
+            with (orchestrator(provider, preProcessor, processor, successTarget, failureTarget)) {
                 shouldThrow<RuntimeException> { orchestrate() }
             }
 
@@ -93,16 +90,6 @@ class OrchestratorImplTest : StringSpec() {
             verify(successTarget, times(10)).delete(any(), any())
         }
 
-    }
-
-    private fun deleteProcessor(): DeleteProcessor {
-        val sourceRecord = mock<SourceRecord>()
-        val deleteOutputs = (1..100).map {
-            DeleteProcessingResult(sourceRecord, "$it").right()
-        }
-        return mock {
-            on { process(any()) } doReturnConsecutively deleteOutputs
-        }
     }
 
     private fun compoundProcessor(): CompoundProcessor {
@@ -131,10 +118,9 @@ class OrchestratorImplTest : StringSpec() {
         provider: () -> KafkaConsumer<ByteArray, ByteArray>,
         preProcessor: PreProcessor,
         processor: CompoundProcessor,
-        deleteProcessor: DeleteProcessor,
         successTarget: SuccessTarget,
         failureTarget: FailureTarget): OrchestratorImpl =
-            OrchestratorImpl(provider, Regex(topic), preProcessor, processor, deleteProcessor,
+            OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
                             10.seconds.toJavaDuration(), successTarget, failureTarget)
 
     private fun successTarget(): SuccessTarget = mock {

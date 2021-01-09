@@ -13,6 +13,8 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import ucfs.claimant.consumer.utility.ExtractionUtility.timestamp
 
 class ExtractionUtilityTest: StringSpec() {
+    private val lastModifiedDate = "2020-01-02"
+
     init {
         "Timestamp returns left when no action" {
             forAll(*sourceFields()) { sourceField ->
@@ -49,7 +51,7 @@ class ExtractionUtilityTest: StringSpec() {
                         "@type": "$action"
                     }
                 }""").timestamp().shouldBeRight { (date, source) ->
-                    date shouldBe "2020-01-02"
+                    date shouldBe lastModifiedDate
                     source shouldBe "_lastModifiedDateTime"
                 }
             }
@@ -84,7 +86,7 @@ class ExtractionUtilityTest: StringSpec() {
                         "@type": "$action"
                     }
                 }""").timestamp().shouldBeRight { (date, source) ->
-                    date shouldBe "2020-01-02"
+                    date shouldBe lastModifiedDate
                     source shouldBe "createdDateTime"
                 }
             }
@@ -100,7 +102,7 @@ class ExtractionUtilityTest: StringSpec() {
                     },
                     "$ENQUEUED_TIMESTAMP_FIELD": "2020-03-04" 
                 }""").timestamp().shouldBeRight { (date, source) ->
-                    date shouldBe "2020-01-02"
+                    date shouldBe lastModifiedDate
                     source shouldBe "_lastModifiedDateTime"
                 }
             }

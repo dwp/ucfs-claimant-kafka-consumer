@@ -20,8 +20,6 @@ import ucfs.claimant.consumer.processor.impl.SourceData.idSourceFields
 class JsonProcessorImplTest : StringSpec() {
     init {
 
-        // TODO: 09/01/2021 missing id
-
         "Returns right if well-formed json and known database action" {
             forAll (*databaseActions) { databaseAction ->
                 val json = """

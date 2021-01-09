@@ -18,9 +18,6 @@ import ucfs.claimant.consumer.utility.GsonExtensions.string
 class ExtractionProcessorImpl : ExtractionProcessor {
 
     override fun process(record: JsonProcessingResult): ExtractionProcessingOutput {
-//        data class JsonProcessingExtract(val jsonObject: JsonObject, val id: String, val action: DatabaseAction,
-//                                         val timestampAndSource: Pair<String, String>)
-
         val (json, _) = record.second
         return json.getObject("message", "encryption").flatMap { encryption ->
             Either.applicative<Any>().tupledN(encryption.string("encryptedEncryptionKey"),

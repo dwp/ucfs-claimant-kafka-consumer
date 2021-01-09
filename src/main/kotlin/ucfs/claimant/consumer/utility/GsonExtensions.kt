@@ -32,7 +32,7 @@ object GsonExtensions {
     fun JsonObject.getObject(vararg path: String): Either<Pair<JsonObject, String>, JsonObject> =
             when (path.size) {
                 1 -> get(path[0])?.takeIf(JsonElement::isJsonObject)?.asJsonObject.rightIfNotNull {
-                    logger.error(
+                    logger.warn(
                         "Failed to extract descendant object",
                         "path" to path.joinToString("/")
                     )
@@ -50,12 +50,12 @@ object GsonExtensions {
                     gson.fromJson(it.toString(), type)
                 }
                 encase { f() }.mapLeft {
-                    logger.error("Failed to parse descendant array", it,
+                    logger.warn("Failed to parse descendant array", "exception" to "${it.message}",
                         "path" to path.joinToString("/"))
                     Pair(this, path.joinToString()).left()
                 }
             } ?: run {
-                logger.error("Failed to extract descendant array","path" to path.joinToString("/"))
+                logger.warn("Failed to extract descendant array","path" to path.joinToString("/"))
                 Pair(this, path.joinToString()).left()
             }) as Either<Pair<JsonObject, String>, List<T>>
 
@@ -79,7 +79,7 @@ object GsonExtensions {
             1 -> get(path[0])?.
                 takeIf(JsonElement::isJsonPrimitive)?.asJsonPrimitive?.
                 takeIf(predicate)?.run(extractor).rightIfNotNull {
-                    logger.error("Failed to extract descendant primitive","path" to path.joinToString("/"))
+                    logger.warn("Failed to extract descendant primitive","path" to path.joinToString("/"))
                     Pair(this, path.joinToString())
                 }
             else -> getChildObject(path[0]).flatMap { it.primitive(predicate, extractor, *path.sliceArray(1 until path.size)) }
@@ -87,7 +87,7 @@ object GsonExtensions {
 
     private fun JsonObject.getChildObject(childName: String): Either<Pair<JsonObject, String>, JsonObject> =
             get(childName)?.takeIf(JsonElement::isJsonObject)?.asJsonObject.rightIfNotNull {
-                logger.error("Failed to extract child object from parent", "child_name" to childName)
+                logger.warn("Failed to extract child object from parent", "child_name" to childName)
                 Pair(this, childName)
             }
 

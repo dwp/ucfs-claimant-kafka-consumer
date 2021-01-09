@@ -13,7 +13,6 @@ import sun.misc.Signal
 import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.orchestrate.Orchestrator
 import ucfs.claimant.consumer.processor.CompoundProcessor
-import ucfs.claimant.consumer.processor.DeleteProcessor
 import ucfs.claimant.consumer.processor.PreProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
@@ -29,7 +28,6 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                        private val topicRegex: Regex,
                        private val preProcessor: PreProcessor,
                        private val compoundProcessor: CompoundProcessor,
-                       private val deleteProcessor: DeleteProcessor,
                        private val pollDuration: Duration,
                        private val successTarget: SuccessTarget,
                        private val failureTarget: FailureTarget) : Orchestrator {
@@ -90,15 +88,12 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             successTarget.upsert(topicPartition, processed.mapNotNull(TransformationProcessingOutput::orNull))
 
 
-    private suspend fun sendDeletes(topic: String, deletes: List<JsonProcessingResult>) {
-        successTarget.delete(topic, deletes)
-    }
+    private suspend fun sendDeletes(topic: String, deletes: List<JsonProcessingResult>) =
+            successTarget.delete(topic, deletes)
+
 
     private fun splitProcessed(additionsAndModifications: List<JsonProcessingResult>) =
             additionsAndModifications.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
-
-    private fun splitDeletes(deletes: List<JsonProcessingResult>) =
-            deletes.map(deleteProcessor::process).partition(DeleteProcessingOutput::isRight)
 
     private fun splitActions(sourced: List<JsonProcessingOutput>) =
             sourced.mapNotNull(JsonProcessingOutput::orNull).partition { (_, extract) ->

@@ -23,7 +23,15 @@ class RdsTarget(private val dataSource: DataSource,
                     statement.addBatch()
                 }
                 val results = statement.executeBatch()
-
+                records.zip(results.asList()).forEach { (result, count) ->
+                    log.info("Inserted or updated record","topic" to topic,
+                        "table" to "${targetTables[topic]}",
+                        "id" to result.second.extract.id,
+                        "action" to "${result.second.extract.action}",
+                        "timestamp" to result.second.extract.timestampAndSource.first,
+                        "timestampSource" to result.second.extract.timestampAndSource.second,
+                        "rows_updated" to "$count")
+                }
             }
         }
     }

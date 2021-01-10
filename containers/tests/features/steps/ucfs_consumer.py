@@ -1,7 +1,10 @@
 import base64
+import hashlib
 import json
 
 import binascii
+
+import boto3 as boto3
 import mysql.connector
 import parse
 import requests
@@ -9,6 +12,7 @@ import time
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
+
 from behave import given, then, step, register_type
 from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 
@@ -32,8 +36,7 @@ def step_impl(context):
 
 @step("{count:Number} records exist on {table}")
 def step_impl(context, count, table):
-    with (mysql.connector.connect(host="rds", user="claimantapi", password="password",
-                                  database="ucfs-claimant")) as connection:
+    with (database_connection()) as connection:
         data = [(extant_record(table, index),) for index in range(0, count * 2, 2)]
         statement = f"INSERT INTO {table} (data) VALUES (%s) ON DUPLICATE KEY UPDATE data = VALUES (data)"
         cursor = connection.cursor()
@@ -100,8 +103,7 @@ def step_impl(context, count, topic, offset):
 
 @step("{expected:Number} {record_type} records will be on {table}")
 def step_impl(context, expected, record_type, table):
-    with (mysql.connector.connect(host="rds", user="claimantapi", password="password",
-                                  database="ucfs-claimant")) as connection:
+    with (database_connection()) as connection:
         count_cursor = connection.cursor()
         count_cursor.execute(f"SELECT count(*) FROM {table}")
         actual = count_cursor.fetchone()[0]
@@ -112,6 +114,48 @@ def step_impl(context, expected, record_type, table):
         contents_cursor.execute(f"SELECT {overwritten_field(table)} FROM {table}")
         for data in contents_cursor:
             assert data[0] == ("phoney" if record_type == "original" else overwritten_value(table))
+
+
+@step("the records on {table} can be deciphered")
+def step_impl(context, table):
+    kms_client = aws_client("kms")
+    ssm_client = aws_client("ssm")
+    parameter = ssm_client.get_parameter(Name='/ucfs/claimant-api/nino/salt')
+    salt = parameter['Parameter']['Value']
+    with (database_connection()) as connection:
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT data FROM {table}")
+        for data in cursor:
+            obj = json.loads(data[0])
+            if 'encryptedTakeHomePay' in obj:
+                encryption_object = obj['encryptedTakeHomePay']
+                encrypted_take_home_pay = encryption_object['takeHomePay']
+                encrypted_key = encryption_object['cipherTextBlob']
+                cipher = base64.b64decode(encrypted_key)
+                decrypted_key_response = kms_client.decrypt(CiphertextBlob=cipher)
+                plaintext_key = decrypted_key_response['Plaintext']
+                iv = encrypted_take_home_pay[:16]
+                encrypted = encrypted_take_home_pay[16:]
+                aes = AES.new(plaintext_key, AES.MODE_GCM, nonce=base64.b64decode(iv))
+                raw = base64.b64decode(encrypted)
+                decrypted = aes.decrypt_and_verify(raw[:-16], raw[-16:])
+                assert decrypted == b"1234.56"
+            elif 'nino' in obj:
+                sha = hashlib.sha512()
+                sha.update("AA123456A".encode())
+                sha.update(salt.encode())
+                digest_b64 = base64.b64encode(sha.digest()).decode().replace('+', '-').replace('/', '_')
+                assert digest_b64 == obj['nino']
+
+
+def encrypt_gcm(key, iv, plaintext):
+    aes = AES.new(key, AES.MODE_GCM, nonce=base64.b64decode(iv))
+    return aes.encrypt(plaintext)
+
+
+def database_connection():
+    return mysql.connector.connect(host="rds", user="claimantapi", password="password",
+                                   database="ucfs-claimant")
 
 
 def extant_record(table: str, index: int) -> str:
@@ -265,7 +309,7 @@ def statement_db_object(record_number: int):
         "numberEligibleChildrenInChildCare": 0,
         "carerElement": "0.00",
         "numberPeopleCaredFor": 0,
-        "takeHomePay": "$takeHomePay",
+        "takeHomePay": "1234.56",
         "takeHomeBreakdown": {
             "rte": "0.00",
             "selfReported": "0.00",
@@ -303,3 +347,13 @@ def statement_db_object(record_number: int):
 def id_field(topic: str) -> str:
     id_fields = {"db.core.claimant": "citizenId", "db.core.contract": "contractId", "db.core.statement": "statementId"}
     return id_fields[topic]
+
+
+def aws_client(service_name: str):
+    return boto3.client(service_name=service_name,
+                        endpoint_url="http://localstack:4566",
+                        use_ssl=False,
+                        region_name='eu-west-2',
+                        aws_access_key_id="accessKeyId",
+                        aws_secret_access_key="secretAccessKey")
+

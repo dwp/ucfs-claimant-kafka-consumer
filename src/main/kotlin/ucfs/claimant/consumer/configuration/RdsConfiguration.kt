@@ -13,6 +13,7 @@ import ucfs.claimant.consumer.repository.SecretRepository
 import ucfs.claimant.consumer.utility.GsonExtensions.integer
 import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 import ucfs.claimant.consumer.utility.GsonExtensions.string
+import uk.gov.dwp.dataworks.logging.DataworksLogger
 import java.io.File
 import javax.sql.DataSource
 import kotlin.time.ExperimentalTime
@@ -40,6 +41,7 @@ class RdsConfiguration(private val databaseCaCertPath: String,
                 addConnectionProperty("user", username)
                 addConnectionProperty("password", password)
                 url = "jdbc:mysql://$host:$port/$instance"
+                log.info("CA Certificate path", "path" to databaseCaCertPath, "exists" to "${File(databaseCaCertPath).isFile}")
                 if (databaseCaCertPath.isNotBlank()) {
                     addConnectionProperty("ssl_ca_path", databaseCaCertPath)
                     addConnectionProperty("ssl_ca", File(databaseCaCertPath).readText())
@@ -65,4 +67,8 @@ class RdsConfiguration(private val databaseCaCertPath: String,
     @Qualifier("naturalIdFields")
     fun naturalIdFields(claimantTopic: String, contractTopic: String, statementTopic: String) =
             mapOf(claimantTopic to claimantNaturalIdField, contractTopic to contractNaturalIdField, statementTopic to statementNaturalIdField)
+
+    companion object {
+        private val log = DataworksLogger.getLogger(RdsConfiguration::class)
+    }
 }

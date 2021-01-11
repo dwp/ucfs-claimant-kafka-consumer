@@ -29,14 +29,18 @@ data class EncryptedDataKeyServiceData(val encryptingKeyId: String, val dataKey:
     }
 }
 
-data class EncryptionExtractionResult(val json: JsonObject, val encryptionMetadata: EncryptionMetadata)
-data class DataKeyResult(val json: JsonObject, val initializationVector: String, val datakey: String)
+enum class DatabaseAction { MONGO_INSERT, MONGO_UPDATE, MONGO_DELETE }
+
+data class EncryptionExtractionResult(val extract: JsonProcessingExtract, val encryptionMetadata: EncryptionMetadata)
+data class DataKeyResult(val extract: JsonProcessingExtract, val initializationVector: String, val datakey: String)
 
 data class CipherServiceEncryptionResult(val encryptingKeyId: String, val initialisationVector: String,
                                          val encryptedDataKey: String, val cipherText: String)
 
-data class DecryptionResult(val json: JsonObject, val plainText: String)
-data class TransformationResult(val json: JsonObject, val transformedDbObject: String, val action: String)
+data class DecryptionResult(val extract: JsonProcessingExtract, val plainText: String)
+data class TransformationResult(val extract: JsonProcessingExtract, val transformedDbObject: String)
+data class JsonProcessingExtract(val jsonObject: JsonObject, val id: String, val action: DatabaseAction,
+                                 val timestampAndSource: Pair<String, String>)
 
 typealias DecryptionData = Either<Any, String>
 typealias CipherServiceEncryptionData = Either<Throwable, CipherServiceEncryptionResult>
@@ -46,7 +50,8 @@ typealias SourceRecord = ConsumerRecord<ByteArray, ByteArray>
 
 typealias SourceRecordProcessingResult = Pair<SourceRecord, String>
 typealias ValidationProcessingResult = Pair<SourceRecord, String>
-typealias JsonProcessingResult = Pair<SourceRecord, JsonObject>
+typealias JsonProcessingResult = Pair<SourceRecord, JsonProcessingExtract>
+typealias DeleteProcessingResult = Pair<SourceRecord, String>
 typealias ExtractionProcessingResult = Pair<SourceRecord, EncryptionExtractionResult>
 typealias DatakeyProcessingResult = Pair<SourceRecord, DataKeyResult>
 typealias DecryptionProcessingResult = Pair<SourceRecord, DecryptionResult>
@@ -59,3 +64,6 @@ typealias ExtractionProcessingOutput = Either<SourceRecord, ExtractionProcessing
 typealias DatakeyProcessingOutput = Either<SourceRecord, DatakeyProcessingResult>
 typealias DecryptionProcessingOutput = Either<SourceRecord, DecryptionProcessingResult>
 typealias TransformationProcessingOutput = Either<SourceRecord, TransformationProcessingResult>
+typealias DeleteProcessingOutput = Either<SourceRecord, DeleteProcessingResult>
+
+

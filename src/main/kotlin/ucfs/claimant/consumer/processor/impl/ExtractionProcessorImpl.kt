@@ -17,14 +17,15 @@ import ucfs.claimant.consumer.utility.GsonExtensions.string
 @Component
 class ExtractionProcessorImpl : ExtractionProcessor {
 
-    override fun process(record: JsonProcessingResult): ExtractionProcessingOutput =
-            record.second.getObject("message", "encryption").flatMap { encryption ->
-                Either.applicative<Any>().tupledN(encryption.string("encryptedEncryptionKey"),
-                        encryption.string("keyEncryptionKeyId"),
-                        encryption.string("initialisationVector")).fix()
-            }.map { (encryptedKey, encryptingKeyId, initialisationVector) ->
-                Pair(record.first,
-                        EncryptionExtractionResult(record.second,
-                                EncryptionMetadata(encryptingKeyId, encryptedKey, initialisationVector)))
-            }.mapLeft { processingFailure(record.first, it, "Failed to extract encryption metadata") }
+    override fun process(record: JsonProcessingResult): ExtractionProcessingOutput {
+        val (json, _) = record.second
+        return json.getObject("message", "encryption").flatMap { encryption ->
+            Either.applicative<Any>().tupledN(encryption.string("encryptedEncryptionKey"),
+                encryption.string("keyEncryptionKeyId"),
+                encryption.string("initialisationVector")).fix()
+        }.map { (encryptedKey, encryptingKeyId, initialisationVector) ->
+            Pair(record.first,
+                EncryptionExtractionResult(record.second, EncryptionMetadata(encryptingKeyId, encryptedKey, initialisationVector)))
+        }.mapLeft { processingFailure(record.first, it, "Failed to extract encryption metadata") }
+    }
 }

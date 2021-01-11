@@ -13,9 +13,11 @@ import ucfs.claimant.consumer.utility.GsonExtensions.string
 @Component
 class DecryptionProcessorImpl(private val decryptionService: DecryptionService) : DecryptionProcessor {
     override fun process(record: DatakeyProcessingResult): DecryptionProcessingOutput =
-            record.second.json.string("message", "dbObject").flatMap { encryptedObject ->
+            record.second.extract.jsonObject.string("message", "dbObject").flatMap { encryptedObject ->
                 decryptionService.decrypt(record.second.datakey, record.second.initializationVector, encryptedObject)
             }.map { decryptedDbObject ->
-                Pair(record.first, DecryptionResult(record.second.json, decryptedDbObject))
-            }.mapLeft { processingFailure(record.first, it, "Failed to decrypt dbObject") }
+                Pair(record.first, DecryptionResult(record.second.extract, decryptedDbObject))
+            }.mapLeft {
+                processingFailure(record.first, it, "Failed to decrypt dbObject")
+            }
 }

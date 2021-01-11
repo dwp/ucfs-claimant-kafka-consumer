@@ -1,6 +1,5 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
-import arrow.core.left
 import arrow.core.right
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.*
@@ -11,17 +10,18 @@ import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.TopicPartition
-import ucfs.claimant.consumer.domain.SourceRecord
-import ucfs.claimant.consumer.domain.TransformationResult
+import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.processor.CompoundProcessor
+import ucfs.claimant.consumer.processor.PreProcessor
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
 import java.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.seconds
 import kotlin.time.toJavaDuration
+
 @ExperimentalTime
-class OrchestratorImplTest : StringSpec() {
+class OrchestratorCommitTest : StringSpec() {
 
     init {
         "Commit on success, rollback on failure" {
@@ -43,21 +43,23 @@ class OrchestratorImplTest : StringSpec() {
 
             val successTarget = mock<SuccessTarget> {
                 onBlocking {
-                    send(any(), any())
+                    upsert(any(), any())
                 } doThrow RuntimeException("Failed batch") doAnswer {}
             }
 
             val failureTarget = mock<FailureTarget>()
-
             val queueRecord = mock<SourceRecord>()
+            val preProcessor = preProcessor()
+
             val processor = mock<CompoundProcessor> {
                 on {
                     process(any())
-                } doReturn Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
+                } doReturn Pair(queueRecord, transformationResult()).right()
             }
 
-            val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
-            shouldThrow<RuntimeException> { consumerService.orchestrate() }
+            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget)
+
+            shouldThrow<RuntimeException> { orchestrator.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
             val failedTopicPartition = TopicPartition(topic, 0)
             verify(consumer, times(1)).committed(failedTopicPartition)
@@ -69,55 +71,40 @@ class OrchestratorImplTest : StringSpec() {
             verifyNoMoreInteractions(consumer)
         }
 
-        "Sends successes to success target, writes failures to the dlq" {
-            val batch = consumerRecords(0, 100)
-            val consumer = mock<KafkaConsumer<ByteArray, ByteArray>> {
-                on { poll(any<Duration>()) } doReturn batch doThrow RuntimeException("End the loop")
-                on { listTopics() } doReturn mapOf(topic to listOf(mock()))
-                on { subscription() } doReturn setOf(topic)
-            }
-
-            val provider: () -> KafkaConsumer<ByteArray, ByteArray> = { consumer }
-
-            val successTarget = mock<SuccessTarget> {
-                onBlocking {
-                    send(any(), any())
-                } doAnswer {}
-            }
-
-            val failureTarget = mock<FailureTarget>()
-            val queueRecord = mock<SourceRecord>()
-
-            val records = (1..100).map { recordNumber ->
-                when {
-                    recordNumber % 2 == 0 -> {
-                        Pair(queueRecord, TransformationResult(JsonObject(), "TRANSFORMED_DB_OBJECT", "MONGO_INSERT")).right()
-                    }
-                    else -> {
-                        consumerRecord(recordNumber).left()
-                    }
-                }
-            }
-
-            val processor = mock<CompoundProcessor> {
-                on { process(any()) } doReturnConsecutively records
-            }
-
-            val consumerService = OrchestratorImpl(provider, Regex(topic), processor, 10.seconds.toJavaDuration(), successTarget, failureTarget)
-            shouldThrow<RuntimeException> { consumerService.orchestrate() }
-            verify(failureTarget, times(10)).send(any())
-            verify(successTarget, times(10)).send(any(), any())
-        }
-
     }
 
+    private fun transformationResult() = TransformationResult(
+        JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE, Pair("2020-01-01", "_lastModifiedDateTime")),
+        "TRANSFORMED_DB_OBJECT")
+
+    private fun orchestrator(
+        provider: () -> KafkaConsumer<ByteArray, ByteArray>,
+        preProcessor: PreProcessor,
+        processor: CompoundProcessor,
+        successTarget: SuccessTarget,
+        failureTarget: FailureTarget): OrchestratorImpl =
+            OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
+                            10.seconds.toJavaDuration(), successTarget, failureTarget)
+
+
+    private fun preProcessor(): PreProcessor {
+        val sourceRecord = mock<SourceRecord>()
+        return mock {
+            on {
+                process(any())
+            } doReturn JsonProcessingResult(sourceRecord,
+                JsonProcessingExtract(JsonObject(), "id",
+                                        DatabaseAction.MONGO_INSERT,
+                                        Pair("date", "datesource"))).right()
+        }
+    }
 
     private fun consumerRecords(first: Int, last: Int): ConsumerRecords<ByteArray, ByteArray> =
             ConsumerRecords((first..last).map(::consumerRecord).groupBy {
                 TopicPartition(it.topic(), it.partition())
             })
 
-    private fun  consumerRecord(recordNumber: Int): ConsumerRecord<ByteArray, ByteArray> =
+    private fun consumerRecord(recordNumber: Int): ConsumerRecord<ByteArray, ByteArray> =
             mock {
                 on { topic() } doReturn "db.database.collection${recordNumber % 2}"
                 on { partition() } doReturn recordNumber % 5

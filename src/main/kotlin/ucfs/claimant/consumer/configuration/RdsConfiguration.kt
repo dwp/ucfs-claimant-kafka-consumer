@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.extensions.either.applicative.applicative
 import arrow.core.fix
 import arrow.core.flatMap
+import arrow.core.identity
 import org.apache.commons.dbcp2.BasicDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -20,7 +21,10 @@ import kotlin.time.ExperimentalTime
 class RdsConfiguration(private val databaseCaCertPath: String,
                        private val claimantTable: String,
                        private val contractTable: String,
-                       private val statementTable: String) {
+                       private val statementTable: String,
+                       private val claimantNaturalIdField: String,
+                       private val contractNaturalIdField: String,
+                       private val statementNaturalIdField: String) {
 
     @ExperimentalTime
     @Bean
@@ -46,7 +50,7 @@ class RdsConfiguration(private val databaseCaCertPath: String,
                 }
             }
         }.fold(
-            ifRight = { it },
+            ifRight = ::identity,
             ifLeft = {
                 throw RuntimeException("Failed to parse required connection parameters from secret '$rdsSecretName' value")
             })
@@ -54,6 +58,11 @@ class RdsConfiguration(private val databaseCaCertPath: String,
     @Bean
     @Qualifier("targetTables")
     fun targetTables(claimantTopic: String, contractTopic: String, statementTopic: String): Map<String, String> =
-        mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
+            mapOf(claimantTopic to claimantTable, contractTopic to contractTable, statementTopic to statementTable)
 
+
+    @Bean
+    @Qualifier("naturalIdFields")
+    fun naturalIdFields(claimantTopic: String, contractTopic: String, statementTopic: String) =
+            mapOf(claimantTopic to claimantNaturalIdField, contractTopic to contractNaturalIdField, statementTopic to statementNaturalIdField)
 }

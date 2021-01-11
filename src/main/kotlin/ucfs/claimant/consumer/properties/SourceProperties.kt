@@ -9,9 +9,9 @@ import org.springframework.context.annotation.Configuration
 data class SourceProperties(var claimantTopic: String = "db.core.claimant",
                             var contractTopic: String = "db.core.contract",
                             var statementTopic: String = "db.core.statement",
-                            var claimantIdField: String = "citizenId",
-                            var contractIdField: String = "contractId",
-                            var statementIdField: String = "statementId")  {
+                            var claimantIdSourceField: String = "citizenId",
+                            var contractIdSourceField: String = "contractId",
+                            var statementIdSourceField: String = "statementId")  {
 
     @Bean
     fun claimantTopic() = claimantTopic
@@ -22,4 +22,12 @@ data class SourceProperties(var claimantTopic: String = "db.core.claimant",
     @Bean
     fun statementTopic() = statementTopic
 
+    @Bean
+    fun claimantIdSourceField() = claimantIdSourceField
+
+    @Bean
+    fun contractIdSourceField() = contractIdSourceField
+
+    @Bean
+    fun statementIdSourceField() = statementIdSourceField
 }

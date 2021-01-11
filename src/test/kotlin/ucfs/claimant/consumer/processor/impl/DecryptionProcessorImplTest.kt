@@ -14,6 +14,7 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import ucfs.claimant.consumer.domain.DataKeyResult
 import ucfs.claimant.consumer.domain.DecryptionResult
 import ucfs.claimant.consumer.domain.SourceRecord
+import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 import ucfs.claimant.consumer.service.DecryptionService
 
 class DecryptionProcessorImplTest : StringSpec() {
@@ -26,13 +27,12 @@ class DecryptionProcessorImplTest : StringSpec() {
                 } doReturn decryptedDbObject.right()
             }
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
-            val json = json()
-            val datakeyResult = DataKeyResult(json, initialisationVector, datakey)
+            val datakeyResult = DataKeyResult(jsonProcessingExtract(json()), initialisationVector, datakey)
             val queueRecord = mock<SourceRecord>()
             val result = decryptionProcessor.process(Pair(queueRecord, datakeyResult))
             result shouldBeRight { (record, result) ->
                 record shouldBeSameInstanceAs queueRecord
-                result shouldBe DecryptionResult(json, decryptedDbObject)
+                result shouldBe DecryptionResult(jsonProcessingExtract(json()), decryptedDbObject)
             }
         }
 
@@ -42,8 +42,7 @@ class DecryptionProcessorImplTest : StringSpec() {
                 on { decrypt(datakey, initialisationVector, encryptedDbObject) } doReturn left.left()
             }
             val decryptionProcessor = DecryptionProcessorImpl(cipherService)
-            val json = json()
-            val datakeyResult = DataKeyResult(json, initialisationVector, datakey)
+            val datakeyResult = DataKeyResult(jsonProcessingExtract(json()), initialisationVector, datakey)
             val queueRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }

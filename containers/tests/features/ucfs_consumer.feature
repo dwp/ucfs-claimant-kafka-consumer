@@ -2,7 +2,7 @@ Feature: Consumes, decrypts, persists.
   The UCFS consumer consumes messages from the kafka queue, decrypts them and commits the offset. Valid messages are
   persisted, invalid messages are sent to the dead letter queue.
 
-  Scenario Outline: Messages are transformed and sent to the appropriate target2
+  Scenario Outline: Messages are transformed and sent to the appropriate target
     Given 50 records exist on <table>
     And a data key has been acquired
     And 200 mixed messages have been posted to <topic>

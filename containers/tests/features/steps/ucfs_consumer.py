@@ -148,11 +148,6 @@ def step_impl(context, table):
                 assert digest_b64 == obj['nino']
 
 
-def encrypt_gcm(key, iv, plaintext):
-    aes = AES.new(key, AES.MODE_GCM, nonce=base64.b64decode(iv))
-    return aes.encrypt(plaintext)
-
-
 def database_connection():
     return mysql.connector.connect(host="rds", user="claimantapi", password="password",
                                    database="ucfs-claimant")
@@ -356,4 +351,3 @@ def aws_client(service_name: str):
                         region_name='eu-west-2',
                         aws_access_key_id="accessKeyId",
                         aws_secret_access_key="secretAccessKey")
-

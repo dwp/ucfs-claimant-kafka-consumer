@@ -18,6 +18,7 @@ class SsmParameterStoreSaltRepository(private val ssmClient: SsmClient, private 
     private fun getParameterRequest(): GetParameterRequest =
         with(GetParameterRequest.builder()) {
             name(saltParameterName)
+            withDecryption(true)
             build()
         }
 }

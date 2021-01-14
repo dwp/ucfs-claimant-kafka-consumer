@@ -20,10 +20,16 @@ object LoggingExtensions {
     }
 
     private fun DataworksLogger.logThrowableOrAny(description: String, result: Any) {
-        if (result is Throwable) {
-            error("Failure result", result, "description" to description, "message" to "${result.message}")
-        } else {
-            error("Failure result", "description" to description, "result" to "$result")
+        when (result) {
+            is Throwable -> {
+                error("Failure result", result, "description" to description, "message" to "${result.message}")
+            }
+            is Pair<*, *> -> {
+                error("Failure result", "description" to description, "result" to "${result.second}")
+            }
+            else -> {
+                error("Failure result", "description" to description, "result" to "$result")
+            }
         }
     }
 }

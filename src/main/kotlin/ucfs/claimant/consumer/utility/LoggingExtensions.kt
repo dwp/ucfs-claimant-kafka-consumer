@@ -19,17 +19,21 @@ object LoggingExtensions {
         )
     }
 
+
     private fun DataworksLogger.logThrowableOrAny(description: String, result: Any) {
         when (result) {
             is Throwable -> {
-                error("Failure result", result, "description" to description, "message" to "${result.message}")
+                error(FAILURE_MESSAGE, result, "description" to description, "message" to "${result.message}")
             }
             is Pair<*, *> -> {
-                error("Failure result", "description" to description, "result" to "${result.second}")
+                error(FAILURE_MESSAGE, "description" to description, "result" to "${result.second}")
             }
             else -> {
-                error("Failure result", "description" to description, "result" to "$result")
+                error(FAILURE_MESSAGE, "description" to description, "result" to "$result")
             }
         }
     }
+
+    private const val FAILURE_MESSAGE = "Failure result"
+
 }

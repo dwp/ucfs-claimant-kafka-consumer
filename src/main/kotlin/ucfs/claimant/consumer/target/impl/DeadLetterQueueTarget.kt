@@ -23,7 +23,10 @@ class DeadLetterQueueTarget(private val producerProvider: () -> KafkaProducer<By
     }
 
     private fun producerRecord(consumerRecord: SourceRecord): ProducerRecord<ByteArray, ByteArray> =
-            ProducerRecord(dlqTopic, null, consumerRecord.timestamp(), consumerRecord.key(), consumerRecord.value())
+            ProducerRecord(dlqTopic, null,
+                consumerRecord.timestamp(),
+                "ucfs-claimant-kafka-consumer-reject-".toByteArray() + consumerRecord.key(),
+                consumerRecord.value())
 
     companion object {
         private val logger = DataworksLogger.getLogger(DeadLetterQueueTarget::class)

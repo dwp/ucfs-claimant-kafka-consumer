@@ -13,3 +13,4 @@ interface ExtractionProcessor : DelegateProcessor<JsonProcessingResult, Extracti
 interface DatakeyProcessor : DelegateProcessor<ExtractionProcessingResult, DatakeyProcessingOutput>
 interface DecryptionProcessor : DelegateProcessor<DatakeyProcessingResult, DecryptionProcessingOutput>
 interface TransformationProcessor : DelegateProcessor<DecryptionProcessingResult, TransformationProcessingOutput>
+interface FilterProcessor : DelegateProcessor<TransformationProcessingResult, FilterProcessingOutput>

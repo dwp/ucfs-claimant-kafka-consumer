@@ -6,10 +6,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.data.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
-import ucfs.claimant.consumer.domain.JsonProcessingResult
-import ucfs.claimant.consumer.domain.SourceRecord
-import ucfs.claimant.consumer.domain.TransformationProcessingResult
-import ucfs.claimant.consumer.domain.TransformationResult
+import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 import ucfs.claimant.consumer.transformer.impl.GsonTestUtility.jsonObject
 import java.sql.Connection
@@ -33,11 +30,11 @@ class RdsTargetTest: StringSpec() {
         val dataSource = dataSource(conn)
         val sourceRecord = mock<SourceRecord>()
         val results = (0..99).map {
-            TransformationProcessingResult(sourceRecord, transformationResult(it))
+            FilterProcessingResult(sourceRecord, filterResult(it))
         }
         rdsTarget(dataSource).upsert(topic, results)
         verifyUpdateStatementInteractions(statement)
-        verifyStatementInteractions(statement)
+        verifyStatementInteractions(statement, 50)
         verifyConnectionInteractions(
             conn,
             """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?"""
@@ -57,13 +54,13 @@ class RdsTargetTest: StringSpec() {
 
         rdsTarget(dataSource).delete(topic, results)
         verifyDeleteStatementInteractions(statement)
-        verifyStatementInteractions(statement)
+        verifyStatementInteractions(statement, 100)
         verifyConnectionInteractions(conn, """DELETE FROM ${targetTables[topic]} WHERE ${naturalIds[topic]} = ?""")
         verifyDataSourceInteractions(dataSource)
     }
 
-    private fun verifyStatementInteractions(statement: PreparedStatement) {
-        verify(statement, times(100)).addBatch()
+    private fun verifyStatementInteractions(statement: PreparedStatement, addBatchCount: Int) {
+        verify(statement, times(addBatchCount)).addBatch()
         verify(statement, times(1)).executeBatch()
         verify(statement, times(1)).close()
         verifyNoMoreInteractions(statement)
@@ -72,7 +69,7 @@ class RdsTargetTest: StringSpec() {
     private fun verifyUpdateStatementInteractions(statement: PreparedStatement) {
         val positionCaptor = argumentCaptor<Int>()
         val jsonCaptor = argumentCaptor<String>()
-        verify(statement, times(200)).setString(positionCaptor.capture(), jsonCaptor.capture())
+        verify(statement, times(100)).setString(positionCaptor.capture(), jsonCaptor.capture())
 
         positionCaptor.allValues.forEachIndexed { index, value ->
             value shouldBe index % 2 + 1
@@ -86,7 +83,7 @@ class RdsTargetTest: StringSpec() {
             .map(JsonPrimitive::getAsInt)
             .toList()
             .forEachIndexed { index, x ->
-                x shouldBe index
+                x shouldBe index * 2
             }
     }
 
@@ -112,8 +109,8 @@ class RdsTargetTest: StringSpec() {
         verifyNoMoreInteractions(dataSource)
     }
 
-    private fun transformationResult(index: Int): TransformationResult =
-            TransformationResult(jsonProcessingExtract(), """{"_id": { "id": $index }}""")
+    private fun filterResult(index: Int): FilterResult =
+            FilterResult(TransformationResult(jsonProcessingExtract(), """{"_id": { "id": $index }}"""), index % 2 == 0)
 
     private fun rdsTarget(dataSource: DataSource): RdsTarget = RdsTarget(dataSource, targetTables, naturalIds)
 

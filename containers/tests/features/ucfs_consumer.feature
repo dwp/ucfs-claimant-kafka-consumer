@@ -6,14 +6,15 @@ Feature: Consumes, decrypts, persists.
     Given 50 records exist on <table>
     And a data key has been acquired
     And 200 mixed messages have been posted to <topic>
-    Then <topic> offset will be committed at 200
+    And 100 nonino messages have been posted to db.core.claimant
+    Then <topic> offset will be committed at <topic_offset>
     And 100 updated records will be on <table>
     And the records on <table> can be deciphered
     And 100 messages will be sent to dead.letter.queue starting from offset <dlq_offset>
     Examples:
-      | topic             | dlq_offset | table     |
-      | db.core.claimant  |          0 | claimant  |
-      | db.core.statement |        100 | statement |
+      | topic             | dlq_offset | table     | topic_offset |
+      | db.core.claimant  |          0 | claimant  |         300  |
+      | db.core.statement |        100 | statement |         200  |
 
 
   Scenario Outline: Deletes are removed from the correct table

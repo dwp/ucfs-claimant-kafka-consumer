@@ -57,7 +57,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
 
 
     private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<ConsumerRecord<ByteArray, ByteArray>>) =
-            sendToTargets(records, topicPartition.topic()).fold(
+            sendToTargets(topicPartition.topic(), records).fold(
                 ifRight = {
                     lastPosition(records).let { lastPosition ->
                         logger.info("Processed batch, committing offset",
@@ -73,7 +73,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                     rollback(topicPartition)
                 })
 
-   private suspend fun sendToTargets(records: List<ConsumerRecord<ByteArray, ByteArray>>, topic: String) =
+   private suspend fun sendToTargets(topic: String, records: List<ConsumerRecord<ByteArray, ByteArray>>) =
             Either.catch {
                 val (successfullySourced, failedPreprocessing) = splitPreprocessed(records)
                 val (additionsAndModifications, deletes) = splitActions(successfullySourced)
@@ -84,9 +84,10 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             }
 
 
+
     private suspend fun sendAdditionsAndModifications(topicPartition: String,
-                                                      processed: List<TransformationProcessingOutput>) =
-            successTarget.upsert(topicPartition, processed.mapNotNull(TransformationProcessingOutput::orNull))
+                                                      results: List<FilterProcessingOutput>) =
+            successTarget.upsert(topicPartition, results.mapNotNull(FilterProcessingOutput::orNull))
 
 
     private suspend fun sendDeletes(topic: String, deletes: List<JsonProcessingResult>) =
@@ -94,7 +95,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
 
 
     private fun splitProcessed(additionsAndModifications: List<JsonProcessingResult>) =
-            additionsAndModifications.map(compoundProcessor::process).partition(TransformationProcessingOutput::isRight)
+            additionsAndModifications.map(compoundProcessor::process).partition(FilterProcessingOutput::isRight)
 
     private fun splitActions(sourced: List<JsonProcessingOutput>) =
             sourced.mapNotNull(JsonProcessingOutput::orNull).partition { (_, extract) ->

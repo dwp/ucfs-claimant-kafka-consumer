@@ -19,6 +19,7 @@ object GsonExtensions {
 
     fun JsonObject.nullableInteger(vararg path: String): Number? = integer(*path).orNull()
     fun JsonObject.nullableObject(vararg path: String): JsonObject? = getObject(*path).orNull()
+    fun JsonObject.nullableString(vararg path: String): String? = string(*path).orNull()
 
     fun JsonObject.string(vararg path: String): Either<Pair<JsonObject, String>, String> =
         primitive(JsonPrimitive::isString, JsonPrimitive::getAsString, *path)

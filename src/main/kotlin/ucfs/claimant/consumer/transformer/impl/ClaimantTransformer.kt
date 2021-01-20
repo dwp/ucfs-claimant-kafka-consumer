@@ -1,14 +1,12 @@
 package ucfs.claimant.consumer.transformer.impl
 
 import arrow.core.Either
-import arrow.core.extensions.either.applicative.applicative
-import arrow.core.fix
 import com.google.gson.JsonObject
 import org.springframework.stereotype.Component
 import ucfs.claimant.consumer.repository.SaltRepository
 import ucfs.claimant.consumer.transformer.Transformer
 import ucfs.claimant.consumer.utility.GsonExtensions.getObject
-import ucfs.claimant.consumer.utility.GsonExtensions.string
+import ucfs.claimant.consumer.utility.GsonExtensions.nullableString
 import java.security.MessageDigest
 import java.util.*
 
@@ -16,11 +14,13 @@ import java.util.*
 class ClaimantTransformer(private val saltRepository: SaltRepository): Transformer {
 
     override fun transform(dbObject: JsonObject): Either<Any, String> =
-        Either.applicative<Any>().tupledN(dbObject.getObject("_id"), dbObject.string("nino")).fix()
-            .map { (id, nino) -> """{
+        dbObject.getObject("_id")
+            .map { id ->
+                val nino = dbObject.nullableString("nino")
+                """{
                         "_id": $id,
-                        "nino": "${hash(nino)}"
-                   }"""
+                        "nino": "${nino?.takeIf(String::isNotBlank)?.let(this::hash) ?: "" }"
+                    }"""
             }
 
     private fun hash(x: String): String =

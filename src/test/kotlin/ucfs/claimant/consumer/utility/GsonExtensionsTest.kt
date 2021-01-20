@@ -15,11 +15,42 @@ import ucfs.claimant.consumer.utility.GsonExtensions.json
 import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 import ucfs.claimant.consumer.utility.GsonExtensions.list
 import ucfs.claimant.consumer.utility.GsonExtensions.nullableInteger
+import ucfs.claimant.consumer.utility.GsonExtensions.nullableString
 import ucfs.claimant.consumer.utility.GsonExtensions.string
 
 class GsonExtensionsTest : StringSpec() {
 
     init {
+
+        "Nullable string return value if present" {
+            val obj = Gson().fromJson("""{ "key": "123" }""", JsonObject::class.java)
+            val result = obj.nullableString("key")
+            result shouldBe "123"
+        }
+
+        "Nullable string return value if empty" {
+            val obj = Gson().fromJson("""{ "key": "" }""", JsonObject::class.java)
+            val result = obj.nullableString("key")
+            result shouldBe ""
+        }
+
+        "Nullable string return value if blank" {
+            val obj = Gson().fromJson("""{ "key": "   " }""", JsonObject::class.java)
+            val result = obj.nullableString("key")
+            result shouldBe "   "
+        }
+
+        "Nullable string returns null if value null" {
+            val obj = Gson().fromJson("""{ "key": null }""", JsonObject::class.java)
+            val result = obj.nullableString("key")
+            result shouldBe null
+        }
+
+        "Nullable string returns null if key not present" {
+            val obj = Gson().fromJson("""{}""", JsonObject::class.java)
+            val result = obj.nullableInteger("key")
+            result shouldBe null
+        }
 
         "Nullable integer return value if present" {
             val obj = Gson().fromJson("""{ "key": 123 }""", JsonObject::class.java)

@@ -57,7 +57,7 @@ class OrchestratorTargetTest : StringSpec() {
 
     private suspend fun verifyAdditionsAndModifications(successTarget: SuccessTarget) {
         val topicCaptor = argumentCaptor<String>()
-        argumentCaptor<List<TransformationProcessingResult>> {
+        argumentCaptor<List<FilterProcessingResult>> {
             verify(successTarget, times(1)).upsert(topicCaptor.capture(), capture())
             topicCaptor.firstValue shouldBe TOPIC
             firstValue.size shouldBe 50 * 3 / 4 + 1
@@ -69,7 +69,7 @@ class OrchestratorTargetTest : StringSpec() {
                     partition() shouldBe 0
                 }
 
-                with(result.second.extract) {
+                with(result.second.transformationResult.extract) {
                     id.toInt() % 4 shouldNotBe 3
                     action shouldBe if (index % 3 == 0) DatabaseAction.MONGO_INSERT else DatabaseAction.MONGO_UPDATE
                     timestampAndSource shouldBe Pair("2020-01-01", "_lastModifiedDateTime")
@@ -163,8 +163,8 @@ class OrchestratorTargetTest : StringSpec() {
         }
 
 
-    private fun mongoUpdate(recordNumber: Int) = transformationResult(DatabaseAction.MONGO_UPDATE, recordNumber)
-    private fun mongoInsert(recordNumber: Int) = transformationResult(DatabaseAction.MONGO_INSERT, recordNumber)
+    private fun mongoUpdate(recordNumber: Int) = FilterResult(transformationResult(DatabaseAction.MONGO_UPDATE, recordNumber), true)
+    private fun mongoInsert(recordNumber: Int) = FilterResult(transformationResult(DatabaseAction.MONGO_INSERT, recordNumber), true)
 
     private fun transformationResult(databaseAction: DatabaseAction, recordNumber: Int) =
         TransformationResult(JsonProcessingExtract(Gson().fromJson("""{ "body": "$recordNumber" }""", JsonObject::class.java), "$recordNumber",
@@ -174,9 +174,10 @@ class OrchestratorTargetTest : StringSpec() {
                             preProcessor: PreProcessor,
                             processor: CompoundProcessor,
                             successTarget: SuccessTarget,
-                            failureTarget: FailureTarget): OrchestratorImpl =
-            OrchestratorImpl(provider, Regex(TOPIC), preProcessor, processor,
-                                10.seconds.toJavaDuration(), successTarget, failureTarget)
+                            failureTarget: FailureTarget): OrchestratorImpl {
+        return OrchestratorImpl(provider, Regex(TOPIC), preProcessor, processor,
+            10.seconds.toJavaDuration(), successTarget, failureTarget)
+    }
 
     private fun consumerRecords(first: Int, last: Int): ConsumerRecords<ByteArray, ByteArray> =
             ConsumerRecords((first..last).map(::consumerRecord).groupBy {

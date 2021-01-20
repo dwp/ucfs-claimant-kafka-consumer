@@ -2,9 +2,7 @@ package ucfs.claimant.consumer.target.impl
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import ucfs.claimant.consumer.domain.JsonProcessingExtract
-import ucfs.claimant.consumer.domain.JsonProcessingResult
-import ucfs.claimant.consumer.domain.TransformationProcessingResult
+import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.target.SuccessTarget
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 import javax.sql.DataSource
@@ -14,22 +12,30 @@ class RdsTarget(private val dataSource: DataSource,
                 @Qualifier("targetTables") private val targetTables: Map<String, String>,
                 @Qualifier("naturalIdFields") private val naturalIds: Map<String, String>): SuccessTarget {
 
-    override suspend fun upsert(topic: String, records: List<TransformationProcessingResult>) {
+    override suspend fun upsert(topic: String, records: List<FilterProcessingResult>) {
         dataSource.connection.use { connection ->
             connection.prepareStatement(upsertSql(topic)).use { statement ->
-                records.map(TransformationProcessingResult::second).forEach { transformationResult ->
-                    statement.setString(1, transformationResult.transformedDbObject)
-                    statement.setString(2, transformationResult.transformedDbObject)
-                    statement.addBatch()
-                }
+                records.map(FilterProcessingResult::second)
+                    .filter(FilterResult::passThrough)
+                    .map(FilterResult::transformationResult)
+                    .map(TransformationResult::transformedDbObject)
+                    .forEach { transformed ->
+                        statement.setString(1, transformed)
+                        statement.setString(2, transformed)
+                        statement.addBatch()
+                    }
+
                 val results = statement.executeBatch()
-                records.zip(results.asList()).forEach { (result, count) ->
-                    log.info("Inserted or updated record","topic" to topic,
+                records.map(FilterProcessingResult::second)
+                    .map(FilterResult::transformationResult)
+                    .map(TransformationResult::extract)
+                    .zip(results.asList()).forEach { (extract, count) ->
+                    log.info("${if (count == 1) "Inserted" else "Updated"} record","topic" to topic,
                         "table" to "${targetTables[topic]}",
-                        "id" to result.second.extract.id,
-                        "action" to "${result.second.extract.action}",
-                        "timestamp" to result.second.extract.timestampAndSource.first,
-                        "timestampSource" to result.second.extract.timestampAndSource.second,
+                        "id" to extract.id,
+                        "action" to "${extract.action}",
+                        "timestamp" to extract.timestampAndSource.first,
+                        "timestampSource" to extract.timestampAndSource.second,
                         "rows_updated" to "$count")
                 }
             }

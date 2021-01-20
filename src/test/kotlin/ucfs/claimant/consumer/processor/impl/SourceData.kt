@@ -6,12 +6,12 @@ import ucfs.claimant.consumer.domain.JsonProcessingExtract
 
 object SourceData {
     const val claimantTopic = "db.core.claimant"
-    const val contractTopic = "db.core.contract"
-    const val statementTopic = "db.core.statement"
+    private const val contractTopic = "db.core.contract"
+    private const val statementTopic = "db.core.statement"
 
     const val claimantIdSourceField = "citizenId"
-    const val contractIdSourceField = "contractId"
-    const val statementIdSourceField = "statementId"
+    private const val contractIdSourceField = "contractId"
+    private const val statementIdSourceField = "statementId"
 
     val idSourceFields =
         mapOf(claimantTopic to claimantIdSourceField,

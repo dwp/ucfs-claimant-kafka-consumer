@@ -39,6 +39,7 @@ data class CipherServiceEncryptionResult(val encryptingKeyId: String, val initia
 
 data class DecryptionResult(val extract: JsonProcessingExtract, val plainText: String)
 data class TransformationResult(val extract: JsonProcessingExtract, val transformedDbObject: String)
+data class FilterResult(val transformationResult: TransformationResult, val passThrough: Boolean)
 data class JsonProcessingExtract(val jsonObject: JsonObject, val id: String, val action: DatabaseAction,
                                  val timestampAndSource: Pair<String, String>)
 
@@ -51,11 +52,11 @@ typealias SourceRecord = ConsumerRecord<ByteArray, ByteArray>
 typealias SourceRecordProcessingResult = Pair<SourceRecord, String>
 typealias ValidationProcessingResult = Pair<SourceRecord, String>
 typealias JsonProcessingResult = Pair<SourceRecord, JsonProcessingExtract>
-typealias DeleteProcessingResult = Pair<SourceRecord, String>
 typealias ExtractionProcessingResult = Pair<SourceRecord, EncryptionExtractionResult>
 typealias DatakeyProcessingResult = Pair<SourceRecord, DataKeyResult>
 typealias DecryptionProcessingResult = Pair<SourceRecord, DecryptionResult>
 typealias TransformationProcessingResult = Pair<SourceRecord, TransformationResult>
+typealias FilterProcessingResult = Pair<SourceRecord, FilterResult>
 
 typealias SourceRecordProcessingOutput = Either<SourceRecord, SourceRecordProcessingResult>
 typealias JsonProcessingOutput = Either<SourceRecord, JsonProcessingResult>
@@ -64,6 +65,6 @@ typealias ExtractionProcessingOutput = Either<SourceRecord, ExtractionProcessing
 typealias DatakeyProcessingOutput = Either<SourceRecord, DatakeyProcessingResult>
 typealias DecryptionProcessingOutput = Either<SourceRecord, DecryptionProcessingResult>
 typealias TransformationProcessingOutput = Either<SourceRecord, TransformationProcessingResult>
-typealias DeleteProcessingOutput = Either<SourceRecord, DeleteProcessingResult>
+typealias FilterProcessingOutput = Either<SourceRecord, FilterProcessingResult>
 
 

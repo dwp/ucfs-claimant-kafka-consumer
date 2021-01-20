@@ -52,7 +52,7 @@ def step_impl(context, count, state, topic):
 
     for i in range(count):
 
-        db_object = topic_db_object(i, topic)
+        db_object = topic_db_object(i, topic, state != "nonino")
 
         if state == "mixed" and i % 2 == 1:
             db_object.pop("_id", None)
@@ -107,6 +107,7 @@ def step_impl(context, expected, record_type, table):
         count_cursor = connection.cursor()
         count_cursor.execute(f"SELECT count(*) FROM {table}")
         actual = count_cursor.fetchone()[0]
+
         assert expected == actual
         count_cursor.close()
 
@@ -232,18 +233,18 @@ def bootstrap_server():
     return "kafka:9092"
 
 
-def topic_db_object(i, topic):
+def topic_db_object(i, topic, include_nino: bool):
     if topic == "db.core.claimant":
-        return claimant_db_object(i)
+        return claimant_db_object(i, include_nino)
     return contract_db_object(i) if topic == "db.core.contract" else statement_db_object(i)
 
 
-def claimant_db_object(record_number: int):
+def claimant_db_object(record_number: int, include_nino: bool):
     return {
         "_id": {
             "citizenId": f"{record_number}"
         },
-        "nino": "AA123456A"
+        "nino": "AA123456A" if include_nino else ""
     }
 
 

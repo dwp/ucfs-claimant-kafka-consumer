@@ -73,9 +73,9 @@ class OrchestratorCommitTest : StringSpec() {
 
     }
 
-    private fun transformationResult() = TransformationResult(
+    private fun transformationResult() = FilterResult(TransformationResult(
         JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE, Pair("2020-01-01", "_lastModifiedDateTime")),
-        "TRANSFORMED_DB_OBJECT")
+        "TRANSFORMED_DB_OBJECT"), true)
 
     private fun orchestrator(
         provider: () -> KafkaConsumer<ByteArray, ByteArray>,

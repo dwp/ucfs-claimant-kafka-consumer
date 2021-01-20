@@ -240,13 +240,12 @@ def topic_db_object(i, topic, include_nino: bool):
 
 
 def claimant_db_object(record_number: int, include_nino: bool):
-    wtf =  {
+    return {
         "_id": {
             "citizenId": f"{record_number}"
         },
         "nino": "AA123456A" if include_nino else ""
     }
-    return wtf
 
 
 def contract_db_object(record_number: int):

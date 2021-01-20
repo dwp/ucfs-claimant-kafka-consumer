@@ -15,7 +15,7 @@ import ucfs.claimant.consumer.domain.*
 class FilterProcessorImplTest: StringSpec() {
 
     init {
-        "Return right true if not contract and well formed json" {
+        "Return right true if not claimant and well formed json" {
             forAll(*nonClaimant) { topic ->
                 allowedThrough("{}", topic).shouldBeRight {
                     it.second.passThrough.shouldBeTrue()
@@ -23,7 +23,7 @@ class FilterProcessorImplTest: StringSpec() {
             }
         }
 
-        "Return right true if not contract and malformed json" {
+        "Return right true if not claimant and malformed json" {
             forAll(*nonClaimant) { topic ->
                 allowedThrough("{", topic).shouldBeRight {
                     it.second.passThrough.shouldBeTrue()

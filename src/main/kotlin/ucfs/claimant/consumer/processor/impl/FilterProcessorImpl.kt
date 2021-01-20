@@ -13,13 +13,12 @@ import ucfs.claimant.consumer.utility.GsonExtensions.nullableString
 
 @Component
 class FilterProcessorImpl(private val claimantTopic: String): FilterProcessor {
-    override fun process(record: TransformationProcessingResult): FilterProcessingOutput {
-        return filter(record.first.topic(), record.second.transformedDbObject).map {
+    override fun process(record: TransformationProcessingResult): FilterProcessingOutput =
+        filter(record.first.topic(), record.second.transformedDbObject).map {
             Pair(record.first, FilterResult(record.second, it))
         }.mapLeft {
             FunctionalUtility.processingFailure(record.first, it,"Failed to perform filtering on transformed object from '${record.first.topic()}'.")
         }
-    }
 
     private fun filter(topic: String, transformed: String): Either<Any, Boolean> =
         if (topic == claimantTopic) {

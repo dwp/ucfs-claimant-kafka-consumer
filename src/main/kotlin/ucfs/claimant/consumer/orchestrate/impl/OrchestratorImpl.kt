@@ -56,7 +56,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
     }
 
 
-    private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<ConsumerRecord<ByteArray, ByteArray>>) =
+    private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<SourceRecord>) =
             sendToTargets(topicPartition.topic(), records).fold(
                 ifRight = {
                     lastPosition(records).let { lastPosition ->
@@ -73,7 +73,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                     rollback(topicPartition)
                 })
 
-   private suspend fun sendToTargets(topic: String, records: List<ConsumerRecord<ByteArray, ByteArray>>) =
+   private suspend fun sendToTargets(topic: String, records: List<SourceRecord>) =
             Either.catch {
                 val (successfullySourced, failedPreprocessing) = splitPreprocessed(records)
                 val (additionsAndModifications, deletes) = splitActions(successfullySourced)

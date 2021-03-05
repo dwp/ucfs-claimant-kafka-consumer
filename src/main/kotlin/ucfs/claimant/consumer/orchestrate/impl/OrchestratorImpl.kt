@@ -1,19 +1,26 @@
 package ucfs.claimant.consumer.orchestrate.impl
 
 import arrow.core.Either
+import io.prometheus.client.Gauge
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.Metric
+import org.apache.kafka.common.MetricName
 import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.errors.WakeupException
 import org.springframework.stereotype.Service
 import sun.misc.Signal
+import sun.misc.SignalHandler
 import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.orchestrate.Orchestrator
 import ucfs.claimant.consumer.processor.CompoundProcessor
 import ucfs.claimant.consumer.processor.PreProcessor
+import ucfs.claimant.consumer.service.MetricsService
+import ucfs.claimant.consumer.service.PushGatewayService
 import ucfs.claimant.consumer.target.FailureTarget
 import ucfs.claimant.consumer.target.SuccessTarget
 import ucfs.claimant.consumer.utility.KafkaConsumerUtility.subscribe
@@ -30,14 +37,21 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                        private val compoundProcessor: CompoundProcessor,
                        private val pollDuration: Duration,
                        private val successTarget: SuccessTarget,
-                       private val failureTarget: FailureTarget) : Orchestrator {
+                       private val failureTarget: FailureTarget,
+                       private val metricsService: MetricsService,
+                       private val pushGatewayService: PushGatewayService,
+                       private val lagGauge: Gauge) : Orchestrator {
 
     @ExperimentalTime
     override fun orchestrate() = runBlocking {
-        consumerProvider().use { consumer ->
-            consumer handleSignal "INT"
-            consumer handleSignal "TERM"
-            consumer.processLoop()
+        try {
+            consumerProvider().use { consumer ->
+                handleSignal(consumer, "INT")
+                handleSignal(consumer,"TERM")
+                consumer.processLoop()
+            }
+        } catch (e: WakeupException) {
+            logger.info("Execution interrupted, exiting normally")
         }
     }
 
@@ -51,10 +65,33 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                         launch { processPartitionRecords(topicPartition, records.records(topicPartition)) }
                     }
                 }
-            }
+                metricateLags()
+           }
         }
     }
 
+    private fun KafkaConsumer<ByteArray, ByteArray>.metricateLags() {
+        try {
+            metrics().filter { it.key.group() == "consumer-fetch-manager-metrics" }
+                .filter { it.key.name() == "records-lag-max" }
+                .mapNotNull(Map.Entry<MetricName, Metric>::value)
+                .forEach { metric ->
+                    val max = metric.metricValue() as Double
+                    if (!max.isNaN()) {
+                        metric.metricName().tags().takeIf { tags ->
+                            tags.containsKey("topic") && tags.containsKey("partition")
+                        } ?.let { tags ->
+                            logger.info("Max record lag", "lag" to "$max",
+                                "topic" to "${tags["topic"]}", "partition" to "${tags["partition"]}")
+                            lagGauge.labels(tags["topic"], tags["partition"]).set(max)
+                        }
+                    }
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+    }
 
     private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<SourceRecord>) =
             sendToTargets(topicPartition.topic(), records).fold(
@@ -114,17 +151,20 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
             lastCommittedOffset(topicPartition)?.let { seek(topicPartition, it) }
 
     private fun <K, V> KafkaConsumer<K, V>.lastCommittedOffset(partition: TopicPartition): Long? =
-            committed(partition)?.offset()
+            committed(setOf(partition))?.get(partition)?.offset()
 
     private fun lastPosition(partitionRecords: List<ConsumerRecord<ByteArray, ByteArray>>) =
             partitionRecords[partitionRecords.size - 1].offset()
 
-    private infix fun <K, V> KafkaConsumer<K, V>.handleSignal(signalName: String) =
-            Signal.handle(Signal(signalName)) {
-                logger.info("Signal received, cancelling job.", "signal" to "$it")
-                closed.set(true)
-                wakeup()
-            }
+    private fun <K, V> handleSignal(consumer: KafkaConsumer<K, V>, signalName: String): SignalHandler? {
+        return Signal.handle(Signal(signalName)) {
+            logger.info("Signal received, cancelling job.", "signal" to "$it")
+            closed.set(true)
+            metricsService.stopMetricsEndpoint()
+            consumer.wakeup()
+            pushGatewayService.pushFinalMetrics()
+        }
+    }
 
     companion object {
         private val logger = DataworksLogger.getLogger(OrchestratorImpl::class)

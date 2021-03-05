@@ -28,6 +28,7 @@ class OrchestratorTargetTest : StringSpec() {
 
     init {
         "Sends updates, deletes to success target, writes failures to the dlq" {
+            println("XXXXXXXXXXXXXXXXXXXXXXXXXXXX TODO - METRICS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
             val successTarget = mock<SuccessTarget>()
             val failureTarget = mock<FailureTarget>()
             with (orchestrator(consumerProvider(), preProcessor(), compoundProcessor(), successTarget, failureTarget)) {
@@ -114,7 +115,7 @@ class OrchestratorTargetTest : StringSpec() {
     }
 
     private fun preProcessor(): PreProcessor {
-        val results = (0..99).map { recordNumber ->
+        val results = List(100) { recordNumber ->
             when (recordNumber % 4) {
                 0 -> {
                     JsonProcessingResult(consumerRecord(recordNumber), JsonProcessingExtract(
@@ -148,7 +149,7 @@ class OrchestratorTargetTest : StringSpec() {
     }
 
     private fun processingOutputs() =
-        (0..99).map { recordNumber ->
+        List(100) { recordNumber ->
             when (recordNumber % 4) {
                 0 -> {
                     Pair(consumerRecord(recordNumber), mongoInsert(recordNumber)).right()
@@ -176,7 +177,7 @@ class OrchestratorTargetTest : StringSpec() {
                             successTarget: SuccessTarget,
                             failureTarget: FailureTarget): OrchestratorImpl {
         return OrchestratorImpl(provider, Regex(TOPIC), preProcessor, processor,
-            10.seconds.toJavaDuration(), successTarget, failureTarget)
+            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), mock())
     }
 
     private fun consumerRecords(first: Int, last: Int): ConsumerRecords<ByteArray, ByteArray> =

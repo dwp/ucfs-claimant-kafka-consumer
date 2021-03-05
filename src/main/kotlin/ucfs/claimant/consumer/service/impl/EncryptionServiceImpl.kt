@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer.service.impl
 
 import arrow.core.flatMap
+import io.prometheus.client.Counter
 import org.springframework.stereotype.Service
 import ucfs.claimant.consumer.domain.CipherServiceEncryptionData
 import ucfs.claimant.consumer.domain.CipherServiceEncryptionResult
@@ -16,7 +17,6 @@ import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
-
 @Service
 class EncryptionServiceImpl(private val encryptingDataKeyRepository: EncryptingDataKeyRepository,
                             private val encryptingTransformation: String,
@@ -24,10 +24,11 @@ class EncryptionServiceImpl(private val encryptingDataKeyRepository: EncryptingD
                             private val encryptingProvider: String,
                             private val secureRandom: SecureRandom,
                             private val maxKeyUsage: Int,
-                            private val initialisationVectorSize: Int) : EncryptionService {
+                            private val initialisationVectorSize: Int,
+                            private val kmsFailures: Counter) : EncryptionService {
 
     override fun encrypt(plaintext: String): CipherServiceEncryptionData {
-        val (encryptingKeyId, dataKey, encryptedDataKey) = encryptedDataKey()
+        val (encryptingKeyId, dataKey, encryptedDataKey) = encryptedDataKey
         val initialisationVector = initialisationVector()
         return dataKey.key(encryptingAlgorithm).flatMap {
             it.encryptingCipher(initialisationVector)
@@ -41,14 +42,20 @@ class EncryptionServiceImpl(private val encryptingDataKeyRepository: EncryptingD
         }
     }
 
-    @Synchronized
-    private fun encryptedDataKey(): EncryptedDataKeyServiceData {
-        if (keyUseCount.incrementAndGet() > maxKeyUsage || currentKeyData == null) {
-            keyUseCount.set(0)
-            currentKeyData = encryptingDataKeyRepository.encryptedDataKey()
+
+    private var encryptedDataKey: EncryptedDataKeyServiceData = encryptingDataKeyRepository.encryptedDataKey()
+        get() {
+            return try {
+                if (keyUseCount.incrementAndGet() > maxKeyUsage) {
+                    keyUseCount.set(0)
+                    field = encryptingDataKeyRepository.encryptedDataKey()
+                }
+                field
+            } catch (e: Exception) {
+                kmsFailures.inc()
+                throw e
+            }
         }
-        return currentKeyData!!
-    }
 
     private fun Key.encryptingCipher(initialisationVector: ByteArray) =
         encase {
@@ -61,6 +68,5 @@ class EncryptionServiceImpl(private val encryptingDataKeyRepository: EncryptingD
 
     companion object {
         val keyUseCount: AtomicInteger = AtomicInteger()
-        var currentKeyData: EncryptedDataKeyServiceData? = null
     }
 }

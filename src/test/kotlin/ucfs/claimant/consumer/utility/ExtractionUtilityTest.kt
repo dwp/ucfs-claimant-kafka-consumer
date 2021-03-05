@@ -21,7 +21,7 @@ class ExtractionUtilityTest: StringSpec() {
                 jsonObject("""{ 
                         "message": { "$sourceField": "2020-01-02" },
                         "timestamp": "2020-05-06"
-                    }""").timestamp().shouldBeLeft {
+                    }""").timestamp() shouldBeLeft {
                     it.shouldBeInstanceOf<Pair<JsonObject, String>>()
                     val (jsonObject, field) = it
                     gson.toJson(jsonObject) shouldMatchJson """{ "$sourceField": "2020-01-02" }"""
@@ -50,7 +50,7 @@ class ExtractionUtilityTest: StringSpec() {
                         "$LAST_MODIFIED_TIMESTAMP_FIELD": "2020-01-02",
                         "@type": "$action"
                     }
-                }""").timestamp().shouldBeRight { (date, source) ->
+                }""").timestamp() shouldBeRight { (date, source) ->
                     date shouldBe lastModifiedDate
                     source shouldBe "_lastModifiedDateTime"
                 }
@@ -85,7 +85,7 @@ class ExtractionUtilityTest: StringSpec() {
                         "$CREATED_TIMESTAMP_FIELD": "2020-01-02",
                         "@type": "$action"
                     }
-                }""").timestamp().shouldBeRight { (date, source) ->
+                }""").timestamp() shouldBeRight { (date, source) ->
                     date shouldBe lastModifiedDate
                     source shouldBe "createdDateTime"
                 }
@@ -101,7 +101,7 @@ class ExtractionUtilityTest: StringSpec() {
                         "@type": "$action"
                     },
                     "$ENQUEUED_TIMESTAMP_FIELD": "2020-03-04" 
-                }""").timestamp().shouldBeRight { (date, source) ->
+                }""").timestamp() shouldBeRight { (date, source) ->
                     date shouldBe lastModifiedDate
                     source shouldBe "_lastModifiedDateTime"
                 }
@@ -117,7 +117,7 @@ class ExtractionUtilityTest: StringSpec() {
                     "@type": "$DELETE_ACTION"
                 },
                 "$ENQUEUED_TIMESTAMP_FIELD": "2020-03-04" 
-            }""").timestamp().shouldBeRight { (date, source) ->
+            }""").timestamp() shouldBeRight { (date, source) ->
                 date shouldBe "2020-03-04"
                 source shouldBe ENQUEUED_TIMESTAMP_FIELD
             }
@@ -136,7 +136,7 @@ class ExtractionUtilityTest: StringSpec() {
     }
 
     private fun validateEpoch(x: JsonObject) {
-        x.timestamp().shouldBeRight { (date, source) ->
+        x.timestamp() shouldBeRight { (date, source) ->
             date shouldBe EPOCH
             source shouldBe EPOCH_INDICATOR
         }

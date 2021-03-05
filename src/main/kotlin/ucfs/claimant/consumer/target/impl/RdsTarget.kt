@@ -1,5 +1,7 @@
 package ucfs.claimant.consumer.target.impl
 
+import io.prometheus.client.Counter
+import io.prometheus.client.spring.web.PrometheusTimeMethod
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import ucfs.claimant.consumer.domain.*
@@ -9,9 +11,13 @@ import javax.sql.DataSource
 
 @Component
 class RdsTarget(private val dataSource: DataSource,
+                private val insertedRecords: Counter,
+                private val updatedRecords: Counter,
+                private val deletedRecords: Counter,
                 @Qualifier("targetTables") private val targetTables: Map<String, String>,
                 @Qualifier("naturalIdFields") private val naturalIds: Map<String, String>): SuccessTarget {
 
+    @PrometheusTimeMethod(name = "uckc_upsert", help = "Duration and count of database upserts")
     override suspend fun upsert(topic: String, records: List<FilterProcessingResult>) {
         dataSource.connection.use { connection ->
             connection.prepareStatement(upsertSql(topic)).use { statement ->
@@ -26,10 +32,16 @@ class RdsTarget(private val dataSource: DataSource,
                     }
 
                 val results = statement.executeBatch()
+
+                val (inserts, updates) = results.asList().partition { it == 1 }
+                insertedRecords.labels(topic).inc(inserts.size.toDouble())
+                updatedRecords.labels(topic).inc(updates.size.toDouble())
+
                 records.map(FilterProcessingResult::second)
                     .map(FilterResult::transformationResult)
                     .map(TransformationResult::extract)
                     .zip(results.asList()).forEach { (extract, count) ->
+
                     log.info("${if (count == 1) "Inserted" else "Updated"} record","topic" to topic,
                         "table" to "${targetTables[topic]}",
                         "id" to extract.id,
@@ -42,6 +54,7 @@ class RdsTarget(private val dataSource: DataSource,
         }
     }
 
+    @PrometheusTimeMethod(name = "uckc_delete", help = "Duration and count of database deletes")
     override suspend fun delete(topic: String, records: List<JsonProcessingResult>) {
         dataSource.connection.use { connection ->
             connection.prepareStatement(deleteSql(topic)).use { statement ->
@@ -50,6 +63,7 @@ class RdsTarget(private val dataSource: DataSource,
                         statement.setString(1, naturalId)
                         statement.addBatch()
                     }
+                    deletedRecords.labels(topic).inc(ids.size.toDouble())
                     val results = statement.executeBatch()
                     logDeletes(records, results, topic)
                 }

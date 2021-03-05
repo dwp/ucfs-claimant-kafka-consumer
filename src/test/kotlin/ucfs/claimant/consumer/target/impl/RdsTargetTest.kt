@@ -5,7 +5,9 @@ import com.nhaarman.mockitokotlin2.*
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.data.forAll
 import io.kotest.data.row
+import io.kotest.matchers.doubles.ToleranceMatcher
 import io.kotest.matchers.shouldBe
+import io.prometheus.client.Counter
 import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.processor.impl.SourceData.jsonProcessingExtract
 import ucfs.claimant.consumer.transformer.impl.GsonTestUtility.jsonObject
@@ -29,16 +31,41 @@ class RdsTargetTest: StringSpec() {
         val conn = connection(statement)
         val dataSource = dataSource(conn)
         val sourceRecord = mock<SourceRecord>()
-        val results = (0..99).map {
+        val results = List(100) {
             FilterProcessingResult(sourceRecord, filterResult(it))
         }
-        rdsTarget(dataSource).upsert(topic, results)
+
+        val insertChild = mock<Counter.Child>()
+        val updateChild = mock<Counter.Child>()
+        val deleteChild = mock<Counter.Child>()
+        val inserts = counter(insertChild)
+        val updates = counter(updateChild)
+        val deletes = counter(deleteChild)
+
+        rdsTarget(dataSource, inserts, updates, deletes).upsert(topic, results)
+
+        verify(inserts, times(1)).labels(topic)
+        verifyNoMoreInteractions(inserts)
+        verify(updates, times(1)).labels(topic)
+        verifyNoMoreInteractions(updates)
+
+        argumentCaptor<Double> {
+            verify(insertChild, times(1)).inc(capture())
+            firstValue shouldBe ToleranceMatcher(34.toDouble(), 0.5)
+        }
+
+        argumentCaptor<Double> {
+            verify(updateChild, times(1)).inc(capture())
+            firstValue shouldBe ToleranceMatcher(66.toDouble(), 0.5)
+        }
+
+        verifyNoMoreInteractions(updates)
+        verifyZeroInteractions(deleteChild)
+
         verifyUpdateStatementInteractions(statement)
         verifyStatementInteractions(statement, 50)
-        verifyConnectionInteractions(
-            conn,
-            """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?"""
-        )
+        verifyConnectionInteractions(conn,
+            """INSERT INTO ${targetTables[topic]} (data) VALUES (?) ON DUPLICATE KEY UPDATE data = ?""")
         verifyDataSourceInteractions(dataSource)
     }
 
@@ -48,11 +75,18 @@ class RdsTargetTest: StringSpec() {
         val dataSource = dataSource(conn)
         val sourceRecord = mock<SourceRecord>()
 
-        val results = (0..99).map {
+        val results = List(100) {
             JsonProcessingResult(sourceRecord, jsonProcessingExtract(id = "$it"))
         }
 
-        rdsTarget(dataSource).delete(topic, results)
+        // TODO: 06/03/2021 metrics tests
+        val insertChild = mock<Counter.Child>()
+        val updateChild = mock<Counter.Child>()
+        val deleteChild = mock<Counter.Child>()
+        val inserts = counter(insertChild)
+        val updates = counter(updateChild)
+        val deletes = counter(deleteChild)
+        rdsTarget(dataSource, inserts, updates, deletes).delete(topic, results)
         verifyDeleteStatementInteractions(statement)
         verifyStatementInteractions(statement, 100)
         verifyConnectionInteractions(conn, """DELETE FROM ${targetTables[topic]} WHERE ${naturalIds[topic]} = ?""")
@@ -112,11 +146,17 @@ class RdsTargetTest: StringSpec() {
     private fun filterResult(index: Int): FilterResult =
             FilterResult(TransformationResult(jsonProcessingExtract(), """{"_id": { "id": $index }}"""), index % 2 == 0)
 
-    private fun rdsTarget(dataSource: DataSource): RdsTarget = RdsTarget(dataSource, targetTables, naturalIds)
+    private fun rdsTarget(dataSource: DataSource, insertedCounter: Counter, updatedCounter: Counter, deletedCounter: Counter): RdsTarget =
+        RdsTarget(dataSource, insertedCounter, updatedCounter, deletedCounter, targetTables, naturalIds)
 
     private fun dataSource(conn: Connection): DataSource =
             mock {
                 on { connection } doReturn conn
+            }
+
+    private fun counter(child: Counter.Child): Counter =
+            mock {
+                on { labels(any()) } doReturn child
             }
 
     private fun connection(statement: PreparedStatement): Connection =
@@ -127,7 +167,7 @@ class RdsTargetTest: StringSpec() {
     private fun preparedStatement(): PreparedStatement =
             mock {
                 on { setString(any(), any()) } doAnswer {}
-                on { executeBatch() } doReturn IntArray(100) { 1 }
+                on { executeBatch() } doReturn IntArray(100) { if (it % 3 == 0) 1 else 0 }
             }
 
     companion object {

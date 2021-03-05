@@ -22,6 +22,12 @@ git-hooks: ## Set up hooks in .githooks
 certificates: git-hooks ## generate self-signed certificates, keystores for local development.
 	./generate-certificates.sh
 
+pushgateway:
+	docker-compose up -d pushgateway
+
+prometheus:
+	docker-compose up -d prometheus
+
 rds:
 	docker-compose up -d rds
 	@{ \
@@ -54,11 +60,18 @@ dks:
 		done; \
 	}
 
-services: kafka rds localstack dks ## Bring up zookeeper, kafka, the database etc.
+services: kafka rds localstack dks pushgateway prometheus ## Bring up zookeeper, kafka, the database etc.
 
 .PHONY: build
 build: ## Build the container
 	docker-compose build ucfs-claimant-kafka-consumer
+
+stop-consumer:
+	docker stop ucfs-claimant-kafka-consumer
+	docker rm ucfs-claimant-kafka-consumer
+
+start-consumer:
+	docker-compose up -d ucfs-claimant-kafka-consumer
 
 up: build services ## Bring up the consumer in Docker with supporting services
 	docker-compose up -d ucfs-claimant-kafka-consumer
@@ -76,11 +89,23 @@ destroy: down ## Bring down the containers and services then delete all volumes,
 	docker network prune -f
 	docker volume prune -f
 
-delete-topic: ## Delete a topic
-	docker exec -it kafka kafka-topics --zookeeper zookeeper:2181 --delete --if-exists --topic $(topic)
-
 list-topics: ## List the topics
 	docker exec -it kafka kafka-topics --zookeeper zookeeper:2181 --list
+
+list-consumer-groups: ## List the topics
+	docker exec -it kafka kafka-consumer-groups --bootstrap-server kafka:9092  --list
+
+reset-offset: ## Reset a topic's offsets
+	docker exec -it kafka kafka-consumer-groups --bootstrap-server kafka:9092 --group ucfs-claimant-consumers --topic $(topic) --reset-offsets --to-earliest --execute
+
+reset-offsets: ## Reset all offsets
+	make reset-offset topic="db.core.claimant"
+	make reset-offset topic="db.core.contract"
+	make reset-offset topic="db.core.statement"
+	make reset-offset topic="dead.letter.queue"
+
+delete-topic: ## Delete a topic
+	docker exec -it kafka kafka-topics --zookeeper zookeeper:2181 --delete --if-exists --topic $(topic)
 
 delete-topics: ## Clear the integration test queue.
 	make delete-topic topic="db.core.claimant"
@@ -92,8 +117,6 @@ delete-topics: ## Clear the integration test queue.
 truncate-tables:
 	docker exec -i rds mysql --user=claimantapi --password=password ucfs-claimant <<< \
 		"truncate claimant; truncate contract; truncate statement"
-
-clear-data: truncate-tables delete-topics
 
 push-local-to-ecr: ## Push a temp version of the consumer to AWS MGMT-DEV ECR
 	@{ \
@@ -107,3 +130,12 @@ rds_root: ## Get a root session on the database.
 
 rds_user: ## Get a client session on the database.
 	docker exec -it rds mysql --user=claimantapi --password=password ucfs-claimant
+
+restart-prometheus:
+	docker stop prometheus pushgateway
+	docker rm prometheus pushgateway
+	docker-compose build prometheus
+	docker-compose up -d prometheus pushgateway
+
+clear-data: stop-consumer truncate-tables delete-topics restart-prometheus reset-offsets start-consumer
+

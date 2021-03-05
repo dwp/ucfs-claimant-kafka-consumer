@@ -1,18 +1,18 @@
 import base64
+import binascii
 import hashlib
 import json
-
-import binascii
+import re
+import time
 
 import boto3 as boto3
 import mysql.connector
 import parse
 import requests
-import time
 from Crypto import Random
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
-
+from assertpy import assert_that
 from behave import given, then, step, register_type
 from kafka import KafkaProducer, KafkaConsumer, TopicPartition
 
@@ -147,6 +147,72 @@ def step_impl(context, table):
                 sha.update(salt.encode())
                 digest_b64 = base64.b64encode(sha.digest()).decode().replace('+', '-').replace('/', '_')
                 assert digest_b64 == obj['nino']
+
+
+@given("the expected metrics have been pushed and scraped")
+def step_impl(context):
+    response = requests.get("http://prometheus:9090/api/v1/targets/metadata").json()["data"]
+    custom_metrics = []
+    expected = ['logback_appender_created',
+                'logback_appender_total',
+                'uckc_decrypt_datakey',
+                'uckc_decrypt_datakey_created',
+                'uckc_delete',
+                'uckc_delete_created',
+                'uckc_deleted_records_created',
+                'uckc_deleted_records_total',
+                'uckc_dks_decrypt_failures_created',
+                'uckc_dks_decrypt_failures_total',
+                'uckc_dks_decrypt_retries_created',
+                'uckc_dks_decrypt_retries_total',
+                'uckc_dlq',
+                'uckc_dlq_created',
+                'uckc_encrypted_datakey',
+                'uckc_encrypted_datakey_created',
+                'uckc_failed_records_created',
+                'uckc_failed_records_total',
+                'uckc_inserted_records_created',
+                'uckc_inserted_records_total',
+                'uckc_kms_failures_created',
+                'uckc_kms_failures_total',
+                'uckc_kms_retries_created',
+                'uckc_kms_retries_total',
+                'uckc_salt',
+                'uckc_salt_created',
+                'uckc_salt_failures_created',
+                'uckc_salt_failures_total',
+                'uckc_salt_retries_created',
+                'uckc_salt_retries_total',
+                'uckc_secret_failures_created',
+                'uckc_secret_failures_total',
+                'uckc_secret_retries_created',
+                'uckc_secret_retries_total',
+                'uckc_secrets',
+                'uckc_secrets_created',
+                'uckc_topic_partition_lags',
+                'uckc_updated_records_created',
+                'uckc_updated_records_total',
+                'uckc_upsert',
+                'uckc_upsert_created']
+
+    while not all(item in custom_metrics for item in expected):
+        time.sleep(2)
+        custom_metrics = [f['metric'] for f in
+                          [m for m in response if not re.compile(r"^(go|process|push(gateway)?)_").match(m['metric'])]]
+
+
+@then("metric query {query} should give the result {expected}")
+def step_impl(context, query, expected):
+    count = 0
+    while count < 1:
+        response = requests.get(f"http://prometheus:9090/api/v1/query?query={query}").json()
+        results = response['data']['result']
+        count = len(results)
+        if count < 1:
+            time.sleep(1)
+
+    actual = results[0]['value'][1]
+    assert_that(actual).is_equal_to(expected)
 
 
 def database_connection():

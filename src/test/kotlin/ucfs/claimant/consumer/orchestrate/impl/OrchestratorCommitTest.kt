@@ -5,10 +5,15 @@ import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.*
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.doubles.ToleranceMatcher
+import io.kotest.matchers.shouldBe
+import io.prometheus.client.Gauge
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.common.Metric
+import org.apache.kafka.common.MetricName
 import org.apache.kafka.common.TopicPartition
 import ucfs.claimant.consumer.domain.*
 import ucfs.claimant.consumer.processor.CompoundProcessor
@@ -21,7 +26,7 @@ import kotlin.time.seconds
 import kotlin.time.toJavaDuration
 
 @ExperimentalTime
-class OrchestratorCommitTest : StringSpec() {
+class OrchestratorCommitTest: StringSpec() {
 
     init {
         "Commit on success, rollback on failure" {
@@ -31,12 +36,22 @@ class OrchestratorCommitTest : StringSpec() {
             val lastCommitted = mock<OffsetAndMetadata> {
                 on { offset() } doReturn lastCommittedOffset
             }
+            val failedTopicPartition = TopicPartition(topic, 0)
+
+            val name = MetricName("records-lag-max", "consumer-fetch-manager-metrics", "Description",
+                                        mapOf("topic" to "TOPIC", "partition" to "PARTITION"))
+
+            val metric = mock<Metric> {
+                on { metricValue() } doReturn 100.toDouble()
+                on { metricName() } doReturn name
+            }
 
             val consumer = mock<KafkaConsumer<ByteArray, ByteArray>> {
                 on { poll(any<Duration>()) } doReturn batch2 doReturn batch1 doThrow RuntimeException("End the loop")
-                on { committed(any()) } doReturn lastCommitted
+                on { committed(any<Set<TopicPartition>>()) } doReturn mapOf(failedTopicPartition to lastCommitted)
                 on { listTopics() } doReturn mapOf(topic to listOf(mock()))
                 on { subscription() } doReturn setOf(topic)
+                on { metrics() } doReturn mapOf(name to metric)
             }
 
             val provider: () -> KafkaConsumer<ByteArray, ByteArray> = { consumer }
@@ -57,34 +72,45 @@ class OrchestratorCommitTest : StringSpec() {
                 } doReturn Pair(queueRecord, transformationResult()).right()
             }
 
-            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget)
+            val child = mock<Gauge.Child>()
+
+            val lagGauge = mock<Gauge> {
+                on { labels(any()) } doReturn child
+            }
+            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget, lagGauge)
 
             shouldThrow<RuntimeException> { orchestrator.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
-            val failedTopicPartition = TopicPartition(topic, 0)
-            verify(consumer, times(1)).committed(failedTopicPartition)
+            verify(consumer, times(1)).committed(setOf(failedTopicPartition))
             verify(consumer, times(3)).subscription()
             verify(consumer, times(3)).listTopics()
             verify(consumer, times(1)).seek(failedTopicPartition, lastCommittedOffset)
             verify(consumer, times(19)).commitSync(any<Map<TopicPartition, OffsetAndMetadata>>())
+            verify(consumer, times(2)).metrics()
             verify(consumer, times(1)).close()
             verifyNoMoreInteractions(consumer)
-        }
 
+            argumentCaptor<Double> {
+                verify(child, times(2)).set(capture())
+                firstValue shouldBe ToleranceMatcher(100.toDouble(), 0.5)
+            }
+        }
     }
 
-    private fun transformationResult() = FilterResult(TransformationResult(
-        JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_UPDATE, Pair("2020-01-01", "_lastModifiedDateTime")),
-        "TRANSFORMED_DB_OBJECT"), true)
+    private fun transformationResult() = FilterResult(
+        TransformationResult(JsonProcessingExtract(JsonObject(),
+            "id",
+            DatabaseAction.MONGO_UPDATE,
+            Pair("2020-01-01", "_lastModifiedDateTime")),
+            "TRANSFORMED_DB_OBJECT"), true)
 
-    private fun orchestrator(
-        provider: () -> KafkaConsumer<ByteArray, ByteArray>,
-        preProcessor: PreProcessor,
-        processor: CompoundProcessor,
-        successTarget: SuccessTarget,
-        failureTarget: FailureTarget): OrchestratorImpl =
-            OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
-                            10.seconds.toJavaDuration(), successTarget, failureTarget)
+    private fun orchestrator(provider: () -> KafkaConsumer<ByteArray, ByteArray>,
+                             preProcessor: PreProcessor,
+                             processor: CompoundProcessor,
+                             successTarget: SuccessTarget,
+                             failureTarget: FailureTarget, lagGauge: Gauge): OrchestratorImpl =
+        OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
+            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), lagGauge)
 
 
     private fun preProcessor(): PreProcessor {
@@ -93,23 +119,22 @@ class OrchestratorCommitTest : StringSpec() {
             on {
                 process(any())
             } doReturn JsonProcessingResult(sourceRecord,
-                JsonProcessingExtract(JsonObject(), "id",
-                                        DatabaseAction.MONGO_INSERT,
-                                        Pair("date", "datesource"))).right()
+                JsonProcessingExtract(JsonObject(), "id", DatabaseAction.MONGO_INSERT,
+                    Pair("date", "datesource"))).right()
         }
     }
 
     private fun consumerRecords(first: Int, last: Int): ConsumerRecords<ByteArray, ByteArray> =
-            ConsumerRecords((first..last).map(::consumerRecord).groupBy {
-                TopicPartition(it.topic(), it.partition())
-            })
+        ConsumerRecords((first..last).map(::consumerRecord).groupBy {
+            TopicPartition(it.topic(), it.partition())
+        })
 
     private fun consumerRecord(recordNumber: Int): ConsumerRecord<ByteArray, ByteArray> =
-            mock {
-                on { topic() } doReturn "db.database.collection${recordNumber % 2}"
-                on { partition() } doReturn recordNumber % 5
-                on { offset() } doReturn recordNumber.toLong()
-            }
+        mock {
+            on { topic() } doReturn "db.database.collection${recordNumber % 2}"
+            on { partition() } doReturn recordNumber % 5
+            on { offset() } doReturn recordNumber.toLong()
+        }
 
     private val topic = "db.database.collection0"
 }

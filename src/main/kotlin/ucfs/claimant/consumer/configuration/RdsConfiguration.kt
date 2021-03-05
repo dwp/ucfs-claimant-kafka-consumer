@@ -5,6 +5,7 @@ import arrow.core.extensions.either.applicative.applicative
 import arrow.core.fix
 import arrow.core.flatMap
 import arrow.core.identity
+import io.prometheus.client.Counter
 import org.apache.commons.dbcp2.BasicDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -25,37 +26,43 @@ class RdsConfiguration(private val databaseCaCertPath: String,
                        private val statementTable: String,
                        private val claimantNaturalIdField: String,
                        private val contractNaturalIdField: String,
-                       private val statementNaturalIdField: String) {
+                       private val statementNaturalIdField: String,
+                       private val secretFailures: Counter) {
 
     @ExperimentalTime
     @Bean
     fun dataSource(secretRepository: SecretRepository, rdsSecretName: String): DataSource =
-        secretRepository.secret(rdsSecretName).jsonObject().flatMap {
-            Either.applicative<Any>().tupledN(it.string("dbInstanceIdentifier"),
-                                              it.string("host"),
-                                              it.integer("port"),
-                                              it.string("username"),
-                                              it.string("password")).fix()
-        }.map { (instance, host, port, username, password) ->
-            BasicDataSource().apply {
-                addConnectionProperty("user", username)
-                addConnectionProperty("password", password)
-                url = "jdbc:mysql://$host:$port/$instance"
-                log.info("CA Certificate path", "path" to databaseCaCertPath, "exists" to "${File(databaseCaCertPath).isFile}")
-                if (databaseCaCertPath.isNotBlank()) {
-                    addConnectionProperty("ssl_ca_path", databaseCaCertPath)
-                    addConnectionProperty("ssl_ca", File(databaseCaCertPath).readText())
-                    addConnectionProperty("ssl_verify_cert", "true")
+        try {
+            secretRepository.secret(rdsSecretName).jsonObject().flatMap {
+                Either.applicative<Any>().tupledN(it.string("dbInstanceIdentifier"),
+                    it.string("host"),
+                    it.integer("port"),
+                    it.string("username"),
+                    it.string("password")).fix()
+            }.map { (instance, host, port, username, password) ->
+                BasicDataSource().apply {
+                    addConnectionProperty("user", username)
+                    addConnectionProperty("password", password)
+                    url = "jdbc:mysql://$host:$port/$instance"
+                    log.info("CA Certificate path", "path" to databaseCaCertPath, "exists" to "${File(databaseCaCertPath).isFile}")
+                    if (databaseCaCertPath.isNotBlank()) {
+                        addConnectionProperty("ssl_ca_path", databaseCaCertPath)
+                        addConnectionProperty("ssl_ca", File(databaseCaCertPath).readText())
+                        addConnectionProperty("ssl_verify_cert", "true")
+                    }
+                    else {
+                        addConnectionProperty("useSSL", "false")
+                    }
                 }
-                else {
-                    addConnectionProperty("useSSL", "false")
-                }
-            }
-        }.fold(
-            ifRight = ::identity,
-            ifLeft = {
-                throw RuntimeException("Failed to parse required connection parameters from secret '$rdsSecretName' value")
-            })
+            }.fold(
+                ifRight = ::identity,
+                ifLeft = {
+                    throw RuntimeException("Failed to parse required connection parameters from secret '$rdsSecretName' value")
+                })
+        } catch (e: Exception) {
+            secretFailures.inc()
+            throw e
+        }
 
     @Bean
     @Qualifier("targetTables")

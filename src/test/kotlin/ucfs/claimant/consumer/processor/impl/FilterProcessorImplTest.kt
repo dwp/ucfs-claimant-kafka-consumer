@@ -17,7 +17,7 @@ class FilterProcessorImplTest: StringSpec() {
     init {
         "Return right true if not claimant and well formed json" {
             forAll(*nonClaimant) { topic ->
-                allowedThrough("{}", topic).shouldBeRight {
+                allowedThrough("{}", topic) shouldBeRight {
                     it.second.passThrough.shouldBeTrue()
                 }
             }
@@ -25,20 +25,20 @@ class FilterProcessorImplTest: StringSpec() {
 
         "Return right true if not claimant and malformed json" {
             forAll(*nonClaimant) { topic ->
-                allowedThrough("{", topic).shouldBeRight {
+                allowedThrough("{", topic) shouldBeRight {
                     it.second.passThrough.shouldBeTrue()
                 }
             }
         }
 
         "Return right true if claimant and nino not blank" {
-            allowedThrough("""{ "nino": "123" }""").shouldBeRight {
+            allowedThrough("""{ "nino": "123" }""") shouldBeRight {
                 it.second.passThrough.shouldBeTrue()
             }
         }
 
         "Return right false if claimant and nino empty" {
-            allowedThrough("""{ "nino": "" }""").shouldBeRight {
+            allowedThrough("""{ "nino": "" }""") shouldBeRight {
                 it.second.passThrough.shouldBeFalse()
             }
         }
@@ -48,13 +48,13 @@ class FilterProcessorImplTest: StringSpec() {
         }
 
         "Return right false if claimant and nino blank" {
-            allowedThrough("""{ "nino": "   " }""").shouldBeRight {
+            allowedThrough("""{ "nino": "   " }""") shouldBeRight {
                 it.second.passThrough.shouldBeFalse()
             }
         }
 
         "Return right false if claimant and nino absent" {
-            allowedThrough("{}").shouldBeRight {
+            allowedThrough("{}") shouldBeRight {
                 it.second.passThrough.shouldBeFalse()
             }
         }

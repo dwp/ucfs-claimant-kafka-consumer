@@ -1,6 +1,17 @@
 version: "3.3"
 
 services:
+  prometheus:
+    build:
+      context: containers/prometheus
+    container_name: prometheus
+
+  pushgateway:
+    image: prom/pushgateway
+    ports:
+      - "9091:9091"
+    container_name: pushgateway
+
   zookeeper:
     image: confluentinc/cp-zookeeper:4.1.0
     container_name: zookeeper
@@ -68,6 +79,8 @@ services:
       AWS_SALT_PARAMETER_NAME: /ucfs/claimant-api/nino/salt
       KAFKA_INSECURE: "true"
       KAFKA_TOPIC_REGEX: db\.\w+\.\w+
+      METRICS_INITIALDELAY: 1000
+      METRICS_PUSHRATE: 2000
       RDS_CA_CERT_PATH: ""
       SECURITY_KEY_PASSWORD: changeit
       SECURITY_KEYSTORE: development-keystore.jks

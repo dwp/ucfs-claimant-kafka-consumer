@@ -79,18 +79,18 @@ class RdsTargetTest: StringSpec() {
             JsonProcessingResult(sourceRecord, jsonProcessingExtract(id = "$it"))
         }
 
-        // TODO: 06/03/2021 metrics tests
-        val insertChild = mock<Counter.Child>()
-        val updateChild = mock<Counter.Child>()
         val deleteChild = mock<Counter.Child>()
-        val inserts = counter(insertChild)
-        val updates = counter(updateChild)
         val deletes = counter(deleteChild)
-        rdsTarget(dataSource, inserts, updates, deletes).delete(topic, results)
+        rdsTarget(dataSource, mock(), mock(), deletes).delete(topic, results)
         verifyDeleteStatementInteractions(statement)
         verifyStatementInteractions(statement, 100)
         verifyConnectionInteractions(conn, """DELETE FROM ${targetTables[topic]} WHERE ${naturalIds[topic]} = ?""")
         verifyDataSourceInteractions(dataSource)
+
+        argumentCaptor<Double> {
+            verify(deleteChild, times(1)).inc(capture())
+            firstValue shouldBe ToleranceMatcher(100.0, 0.5)
+        }
     }
 
     private fun verifyStatementInteractions(statement: PreparedStatement, addBatchCount: Int) {

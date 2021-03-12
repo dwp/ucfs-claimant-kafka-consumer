@@ -28,7 +28,6 @@ class OrchestratorTargetTest : StringSpec() {
 
     init {
         "Sends updates, deletes to success target, writes failures to the dlq" {
-            println("XXXXXXXXXXXXXXXXXXXXXXXXXXXX TODO - METRICS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
             val successTarget = mock<SuccessTarget>()
             val failureTarget = mock<FailureTarget>()
             with (orchestrator(consumerProvider(), preProcessor(), compoundProcessor(), successTarget, failureTarget)) {

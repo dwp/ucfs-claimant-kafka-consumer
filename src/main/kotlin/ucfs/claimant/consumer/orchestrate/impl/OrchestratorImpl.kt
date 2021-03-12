@@ -71,26 +71,21 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
     }
 
     private fun KafkaConsumer<ByteArray, ByteArray>.metricateLags() {
-        try {
-            metrics().filter { it.key.group() == "consumer-fetch-manager-metrics" }
-                .filter { it.key.name() == "records-lag-max" }
-                .mapNotNull(Map.Entry<MetricName, Metric>::value)
-                .forEach { metric ->
-                    val max = metric.metricValue() as Double
-                    if (!max.isNaN()) {
-                        metric.metricName().tags().takeIf { tags ->
-                            tags.containsKey("topic") && tags.containsKey("partition")
-                        } ?.let { tags ->
-                            logger.info("Max record lag", "lag" to "$max",
-                                "topic" to "${tags["topic"]}", "partition" to "${tags["partition"]}")
-                            lagGauge.labels(tags["topic"], tags["partition"]).set(max)
-                        }
+        metrics().filter { it.key.group() == "consumer-fetch-manager-metrics" }
+            .filter { it.key.name() == "records-lag-max" }
+            .mapNotNull(Map.Entry<MetricName, Metric>::value)
+            .forEach { metric ->
+                val max = metric.metricValue() as Double
+                if (!max.isNaN()) {
+                    metric.metricName().tags().takeIf { tags ->
+                        tags.containsKey("topic") && tags.containsKey("partition")
+                    } ?.let { tags ->
+                        logger.info("Max record lag", "lag" to "$max",
+                            "topic" to "${tags["topic"]}", "partition" to "${tags["partition"]}")
+                        lagGauge.labels(tags["topic"], tags["partition"]).set(max)
                     }
                 }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
-        }
+            }
     }
 
     private suspend fun KafkaConsumer<ByteArray, ByteArray>.processPartitionRecords(topicPartition: TopicPartition, records: List<SourceRecord>) =

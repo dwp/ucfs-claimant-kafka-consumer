@@ -24,7 +24,7 @@ RUN echo "ENV http: ${http_proxy}" \
     && echo "ENV HTTPS: ${HTTPS_PROXY}" \
     && echo "ARG full: ${http_proxy_full}"
 
-ENV acm_cert_helper_version="0.38.0"
+ENV acm_cert_helper_version="0.37.0"
 RUN echo "===> Installing Dependencies ..." \
     && echo "===> Updating base packages ..." \
     && apk update \

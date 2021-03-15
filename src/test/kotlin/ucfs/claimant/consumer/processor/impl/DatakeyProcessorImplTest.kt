@@ -2,15 +2,14 @@ package ucfs.claimant.consumer.processor.impl
 
 import arrow.core.left
 import arrow.core.right
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.*
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import io.prometheus.client.Counter
 import ucfs.claimant.consumer.domain.DataKeyResult
 import ucfs.claimant.consumer.domain.EncryptionExtractionResult
 import ucfs.claimant.consumer.domain.EncryptionMetadata
@@ -26,7 +25,9 @@ class DatakeyProcessorImplTest : StringSpec() {
             val datakeyRepository = mock<DecryptingDataKeyRepository> {
                 on { decryptDataKey(encryptingKeyId, encryptedKey) } doReturn decryptedKey.right()
             }
-            val processor = DataKeyProcessorImpl(datakeyRepository)
+            val counter = mock<Counter>()
+            val processor = DataKeyProcessorImpl(datakeyRepository, counter)
+            verifyZeroInteractions(counter)
             val input = encryptionExtractionResult()
             val queueRecord = mock<SourceRecord>()
             val result = processor.process(Pair(queueRecord, input))
@@ -42,13 +43,16 @@ class DatakeyProcessorImplTest : StringSpec() {
                     decryptDataKey(encryptingKeyId, encryptedKey)
                 } doReturn Pair(returnCode, Pair(encryptingKeyId, encryptedKey)).left()
             }
-            val processor = DataKeyProcessorImpl(datakeyRepository)
+            val counter = mock<Counter>()
+            val processor = DataKeyProcessorImpl(datakeyRepository, counter)
             val input = encryptionExtractionResult()
             val queueRecord = mock<SourceRecord> {
                 on { key() } doReturn "key".toByteArray()
             }
             val result = processor.process(Pair(queueRecord, input))
             result shouldBeLeft queueRecord
+            verify(counter, times(1)).inc()
+            verifyNoMoreInteractions(counter)
         }
 
         "Throws exception if service unavailable" {
@@ -56,12 +60,15 @@ class DatakeyProcessorImplTest : StringSpec() {
             val datakeyRepository = mock<DecryptingDataKeyRepository> {
                 on { decryptDataKey(encryptingKeyId, encryptedKey) } doThrow thrown
             }
-            val processor = DataKeyProcessorImpl(datakeyRepository)
+            val counter = mock<Counter>()
+            val processor = DataKeyProcessorImpl(datakeyRepository, counter)
             val input = encryptionExtractionResult()
             val error = shouldThrow<DataKeyServiceUnavailableException> {
                 processor.process(Pair(mock(), input))
             }
             error shouldBeSameInstanceAs thrown
+            verify(counter, times(1)).inc()
+            verifyNoMoreInteractions(counter)
         }
 
     }

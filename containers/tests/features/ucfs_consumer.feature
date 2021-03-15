@@ -26,3 +26,19 @@ Feature: Consumes, decrypts, persists.
     Examples:
       | topic             | table    |
       | db.core.contract  | contract |
+
+  Scenario Outline: Counter metrics have the correct values
+    Given the expected metrics have been pushed and scraped
+    Then metric query <query> should give the result <expected>
+    Examples:
+      | query                                                  | expected |
+      | uckc_deleted_records_total{topic="db.core.contract"}   |       50 |
+      | uckc_deleted_records_total{topic="db.core.claimant"}   |        0 |
+      | uckc_deleted_records_total{topic="db.core.statement"}  |        0 |
+      | uckc_updated_records_total{topic="db.core.contract"}   |        0 |
+      | uckc_updated_records_total{topic="db.core.claimant"}   |       50 |
+      | uckc_updated_records_total{topic="db.core.statement"}  |       50 |
+      | uckc_failed_records_total{topic="db.core.claimant"}    |      100 |
+      | uckc_failed_records_total{topic="db.core.statement"}   |      100 |
+      | uckc_inserted_records_total{topic="db.core.claimant"}  |       50 |
+      | sum(uckc_topic_partition_lags)                         |        0 |

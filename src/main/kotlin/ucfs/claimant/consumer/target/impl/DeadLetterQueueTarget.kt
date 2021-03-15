@@ -1,5 +1,7 @@
 package ucfs.claimant.consumer.target.impl
 
+import io.prometheus.client.Counter
+import io.prometheus.client.spring.web.PrometheusTimeMethod
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.springframework.stereotype.Component
@@ -9,14 +11,17 @@ import uk.gov.dwp.dataworks.logging.DataworksLogger
 
 @Component
 class DeadLetterQueueTarget(private val producerProvider: () -> KafkaProducer<ByteArray, ByteArray>,
-                            private val dlqTopic: String) : FailureTarget {
+                            private val dlqTopic: String,
+                            private val failedRecords: Counter) : FailureTarget {
 
+    @PrometheusTimeMethod(name = "uckc_dlq", help = "Duration and count of DLQ posts")
     override fun send(records: List<SourceRecord>) {
         if (records.isNotEmpty()) {
             records.forEach {
                 logger.warn("Sending record to the dlq", "topic" to it.topic(),
                     "key" to String(it.key()), "offset" to "${it.offset()}", "partition" to "${it.partition()}",
                     "message_timestamp" to "${it.timestamp()}")
+                failedRecords.labels(it.topic()).inc()
             }
             producerProvider().use { producer -> records.map(::producerRecord).forEach(producer::send) }
         }

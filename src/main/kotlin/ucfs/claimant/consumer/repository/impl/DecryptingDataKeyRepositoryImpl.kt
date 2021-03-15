@@ -1,6 +1,8 @@
 package ucfs.claimant.consumer.repository.impl
 
 import arrow.core.left
+import io.prometheus.client.Counter
+import io.prometheus.client.spring.web.PrometheusTimeMethod
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.entity.ContentType
 import org.apache.http.entity.StringEntity
@@ -23,8 +25,10 @@ import java.util.*
 
 @Repository
 class DecryptingDataKeyRepositoryImpl(private val httpClientProvider: HttpClientProvider,
+                                      private val dksDecryptRetries: Counter,
                                       private val url: String) : DecryptingDataKeyRepository {
 
+    @PrometheusTimeMethod(name = "uckc_decrypt_datakey", help = "Duration of DKS decrypt key requests")
     @Retryable(value = [Exception::class],
             maxAttemptsExpression = "\${dks.retry.maxAttempts:5}",
             backoff = Backoff(delayExpression = "\${dks.retry.delay:1000}",
@@ -53,8 +57,8 @@ class DecryptingDataKeyRepositoryImpl(private val httpClientProvider: HttpClient
                     else -> {
                         logger.error("DKS service error", "status_code" to "${response.statusLine.statusCode}",
                             "dks_url" to dksUrl, "correlation_id" to correlationId,
-                            "encrypted_key" to encryptedKey, "encrypting_key_id" to encryptingKeyId
-                        )
+                            "encrypted_key" to encryptedKey, "encrypting_key_id" to encryptingKeyId)
+                        dksDecryptRetries.inc()
                         throw DataKeyServiceUnavailableException("Request to data key service $correlationId returned ${response.statusLine.statusCode}")
                     }
                 }

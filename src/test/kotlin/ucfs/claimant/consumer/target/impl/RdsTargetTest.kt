@@ -147,7 +147,8 @@ class RdsTargetTest: StringSpec() {
             FilterResult(TransformationResult(jsonProcessingExtract(), """{"_id": { "id": $index }}"""), index % 2 == 0)
 
     private fun rdsTarget(dataSource: DataSource, insertedCounter: Counter, updatedCounter: Counter, deletedCounter: Counter): RdsTarget =
-        RdsTarget(dataSource, insertedCounter, updatedCounter, deletedCounter, targetTables, naturalIds)
+        RdsTarget(dataSource, insertedCounter, updatedCounter, deletedCounter, targetTables, naturalIds,
+            "db.core.claimant", "db.core.contract", "db.core.statement")
 
     private fun dataSource(conn: Connection): DataSource =
             mock {

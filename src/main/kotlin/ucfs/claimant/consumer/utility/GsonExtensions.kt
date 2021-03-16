@@ -20,6 +20,7 @@ object GsonExtensions {
     fun JsonObject.nullableInteger(vararg path: String): Number? = integer(*path).orNull()
     fun JsonObject.nullableObject(vararg path: String): JsonObject? = getObject(*path).orNull()
     fun JsonObject.nullableString(vararg path: String): String? = string(*path).orNull()
+    fun <T> JsonObject.nullableList(vararg path: String): List<T>? = list<T>(*path).orNull()
 
     fun JsonObject.string(vararg path: String): Either<Pair<JsonObject, String>, String> =
         primitive(JsonPrimitive::isString, JsonPrimitive::getAsString, *path)
@@ -33,10 +34,8 @@ object GsonExtensions {
     fun JsonObject.getObject(vararg path: String): Either<Pair<JsonObject, String>, JsonObject> =
             when (path.size) {
                 1 -> get(path[0])?.takeIf(JsonElement::isJsonObject)?.asJsonObject.rightIfNotNull {
-                    logger.warn(
-                        "Failed to extract descendant object",
-                        "path" to path.joinToString("/")
-                    )
+                    logger.warn("Failed to extract descendant object",
+                        "path" to path.joinToString("/"))
                     Pair(this, path.joinToString())
                 }
                 else -> getChildObject(path[0]).flatMap { it.getObject(*path.sliceArray(1 until path.size)) }

@@ -69,29 +69,40 @@ class RdsTarget(private val dataSource: DataSource,
 
     private fun topicSpecificTuples(topic: String, transformedOutput: String): Array<Pair<String, String>> {
         return transformedOutput.jsonObject().map { transformedObject ->
-            when (topic) {
-                claimantTopic -> {
-                    arrayOf("nino" to "${transformedObject.nullableString("nino")}")
+            try {
+                when (topic) {
+                    claimantTopic -> {
+                        arrayOf("nino" to "${transformedObject.nullableString("nino")}")
+                    }
+                    contractTopic -> {
+                        val people = transformedObject.nullableList<String>("people")
+                        val person1 = people?.firstOrNull()
+                        val person2 = people?.takeIf(List<String>::isNotEmpty)?.takeIf { it.size > 1 }?.get(1)
+                        val startDate = transformedObject.nullableInteger("startDate")
+                        val closedDate = transformedObject.nullableInteger("closedDate")
+                        arrayOf("start_date" to "$startDate", "closed_date" to "$closedDate",
+                            "person_one" to "$person1", "person_two" to "$person2")
+                    }
+                    statementTopic -> {
+                        val startDate = transformedObject.nullableInteger("assessmentPeriod", "startDate")
+                        val endDate = transformedObject.nullableInteger("assessmentPeriod", "endDate")
+                        val people = transformedObject.nullableList<Map<String, String>>("people")
+                        val person1 = people?.firstOrNull();
+                        val person1CitizenId = person1?.get("citizenId")
+                        val person1ContractId = person1?.get("contractId")
+
+                        val person2 = people?.takeIf(List<Map<String, String>>::isNotEmpty)?.takeIf { it.size > 1 }?.get(1)
+                        val person2CitizenId = person2?.get("citizenId")
+                        val person2ContractId = person2?.get("contractId")
+                        arrayOf("start_date" to "$startDate", "end_date" to "$endDate",
+                            "person_one_citizen_id" to "$person1CitizenId", "person_one_contract_id" to "$person1ContractId",
+                            "person_two_citizen_id" to "$person2CitizenId", "person_two_contract_id" to "$person2ContractId")
+                    }
+                    else -> arrayOf()
                 }
-                contractTopic -> {
-                    val people = transformedObject.nullableList<String>("people")
-                    val person1 = people?.firstOrNull()
-                    val person2 = people?.takeIf(List<String>::isNotEmpty)?.takeIf { it.size > 1 }?.get(1)
-                    val startDate = transformedObject.nullableInteger("startDate")
-                    val closedDate = transformedObject.nullableInteger("closedDate")
-                    arrayOf("start_date" to "$startDate", "closed_date" to "$closedDate",
-                        "person_one" to "$person1", "person_two" to "$person2")
-                }
-                statementTopic -> {
-                    val startDate = transformedObject.nullableInteger("assessmentPeriod", "startDate")
-                    val endDate = transformedObject.nullableInteger("assessmentPeriod", "endDate")
-                    val people = transformedObject.nullableList<String>("people")
-                    val person1 = people?.firstOrNull()
-                    val person2 = people?.takeIf(List<String>::isNotEmpty)?.takeIf { it.size > 1 }?.get(1)
-                    arrayOf("start_date" to "$startDate", "end_date" to "$endDate",
-                        "person_one" to "$person1", "person_two" to "$person2")
-                }
-                else -> arrayOf()
+            } catch (e: Exception) {
+                log.error("Failed to extract topic specific tuples", e, "error_message" to "${e.message}")
+                arrayOf()
             }
         }.fold(ifRight = ::identity, ifLeft = { arrayOf() })
     }

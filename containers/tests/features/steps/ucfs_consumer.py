@@ -349,7 +349,10 @@ def statement_db_object(record_number: int):
             "statementId": f"{record_number}"
         },
         "_version": 1,
-        "people": ["person1", "person2"],
+        "people": [
+            { "citizenId": "person1citizenId", "contractId": "person1contractId"},
+            { "citizenId": "person2citizenId", "contractId": "person2contractId"}
+        ],
         "assessmentPeriod": {
             "endDate": 20280131,
             "startDate": 20280101,

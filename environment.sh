@@ -17,6 +17,7 @@ main() {
                            ucfs-claimant-kafka-consumer-tests.crt
 
     import_into_truststore ucfs-claimant-kafka-consumer-truststore.jks dks.crt
+    import_into_truststore ucfs-claimant-kafka-consumer-truststore.jks rds-ca-2019-eu-west-2.pem
 
     extract_pems ./ucfs-claimant-kafka-consumer-tests-keystore.jks
     extract_pems ./dks-keystore.jks

@@ -1,12 +1,14 @@
 package ucfs.claimant.consumer.properties
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
 @ConfigurationProperties(prefix = "rds")
-data class RdsProperties(var caCertPath: String = "./rds-ca-2019-eu-west-2.pem",
+data class RdsProperties(@Value("rds.truststore") var truststore: String = "",
+                         @Value("rds.truststore.password") var truststorePassword: String = "",
                          var claimantTable: String = "claimant",
                          var contractTable: String = "contract",
                          var statementTable: String = "statement",
@@ -15,7 +17,10 @@ data class RdsProperties(var caCertPath: String = "./rds-ca-2019-eu-west-2.pem",
                          var statementNaturalIdField: String = "statement_id") {
 
     @Bean
-    fun databaseCaCertPath() = caCertPath
+    fun trustStore() = truststore
+
+    @Bean
+    fun trustStorePassword() = truststorePassword
 
     @Bean
     fun claimantTable() = claimantTable

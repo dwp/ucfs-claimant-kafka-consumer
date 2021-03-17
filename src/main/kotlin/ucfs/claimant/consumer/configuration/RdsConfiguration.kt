@@ -15,19 +15,21 @@ import ucfs.claimant.consumer.utility.GsonExtensions.integer
 import ucfs.claimant.consumer.utility.GsonExtensions.jsonObject
 import ucfs.claimant.consumer.utility.GsonExtensions.string
 import uk.gov.dwp.dataworks.logging.DataworksLogger
-import java.io.File
 import javax.sql.DataSource
 import kotlin.time.ExperimentalTime
 
 @Configuration
-class RdsConfiguration(private val databaseCaCertPath: String,
-                       private val claimantTable: String,
-                       private val contractTable: String,
-                       private val statementTable: String,
-                       private val claimantNaturalIdField: String,
-                       private val contractNaturalIdField: String,
-                       private val statementNaturalIdField: String,
-                       private val secretFailures: Counter) {
+class RdsConfiguration(
+    private val trustStore: String,
+    private val trustStorePassword: String,
+    private val claimantTable: String,
+    private val contractTable: String,
+    private val statementTable: String,
+    private val claimantNaturalIdField: String,
+    private val contractNaturalIdField: String,
+    private val statementNaturalIdField: String,
+    private val secretFailures: Counter
+) {
 
     @ExperimentalTime
     @Bean
@@ -44,13 +46,15 @@ class RdsConfiguration(private val databaseCaCertPath: String,
                     addConnectionProperty("user", username)
                     addConnectionProperty("password", password)
                     url = "jdbc:mysql://$host:$port/$instance"
-                    log.info("CA Certificate path", "path" to databaseCaCertPath, "exists" to "${File(databaseCaCertPath).isFile}")
-                    if (databaseCaCertPath.isNotBlank()) {
-                        addConnectionProperty("ssl_ca_path", databaseCaCertPath)
-                        addConnectionProperty("ssl_ca", File(databaseCaCertPath).readText())
-                        addConnectionProperty("ssl_verify_cert", "true")
-                    }
-                    else {
+                    if (trustStore.isNotBlank()) {
+                        log.info("Using TLS for connection to database", "trustStorePath" to trustStore)
+
+                        addConnectionProperty("enabledTLSProtocols", "TLSv1.2")
+                        addConnectionProperty("sslMode", "REQUIRED")
+                        addConnectionProperty("trustCertificateKeyStoreUrl", "file:$trustStore")
+                        addConnectionProperty("trustCertificateKeyStorePassword", trustStorePassword)
+                    } else {
+                        log.warn("No RDS truststore set, disabling SSL")
                         addConnectionProperty("useSSL", "false")
                     }
                 }

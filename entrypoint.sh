@@ -16,10 +16,10 @@ fi
 
 # Generate a cert for Kafka mutual auth
 HOSTNAME=$(hostname)
+SSL_DIR="$(mktemp -d)"
 if [ "${KAFKA_USE_SSL}" == "true" ]
 then
 
-    SSL_DIR="$(mktemp -d)"
     export SECURITY_KEY_PASSWORD="$(uuidgen)"
 
     export SECURITY_KEYSTORE="${SSL_DIR}/kafka.keystore"
@@ -70,7 +70,38 @@ then
         exit 1
     fi
 else
-    echo "Skipping cert generation for host ${HOSTNAME}"
+    echo "Skipping Kafka cert generation for host ${HOSTNAME}"
+fi
+
+if [ "${RDS_USE_SSL}" == "true" ]; then
+  if [ -f "${RDS_CA_CERT_PATH}" ]; then
+    export RDS_TRUSTSTORE="${SSL_DIR}/rds.truststore"
+    export RDS_TRUSTSTORE_PASSWORD="$(uuidgen)"
+
+    keytool -v \
+        -genkeypair \
+        -keyalg RSA \
+        -alias cid \
+        -keystore "${RDS_TRUSTSTORE}" \
+        -storepass "${RDS_TRUSTSTORE_PASSWORD}" \
+        -validity 365 \
+        -keysize 2048 \
+        -keypass "${RDS_TRUSTSTORE_PASSWORD}" \
+        -dname "CN=${HOSTNAME},OU=DataWorks,O=DWP,L=Leeds,ST=West Yorkshire,C=UK"
+
+      keytool -importcert \
+        -noprompt \
+        -v \
+        -trustcacerts \
+        -file "${RDS_CA_CERT_PATH}" \
+        -keystore "${RDS_TRUSTSTORE}" \
+        -storepass "${RDS_TRUSTSTORE_PASSWORD}"
+  else
+    echo "CA certificate file ${RDS_CA_CERT_PATH} does not exist. Unset RDS_USE_SSL environment variable to disable SSL."
+    exit 1
+  fi
+else
+  echo "Not using SSL for RDS"
 fi
 
 exec "${@}"

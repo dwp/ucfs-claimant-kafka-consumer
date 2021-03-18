@@ -37,7 +37,7 @@ dependencies {
     implementation("io.prometheus:simpleclient_pushgateway:0.10.0")
     implementation("io.prometheus:simpleclient_spring_web:0.10.0")
     implementation("io.prometheus:simpleclient_httpserver:0.10.0")
-    implementation("mysql:mysql-connector-java:6.0.6")
+    implementation("mysql:mysql-connector-java:8.0.23")
     implementation("org.apache.commons:commons-dbcp2:2.8.0")
     implementation("org.apache.httpcomponents:httpclient:4.5.13")
     implementation("org.apache.kafka:kafka-clients:2.7.0")

@@ -2,7 +2,6 @@ package ucfs.claimant.consumer.target.impl
 
 import arrow.core.extensions.list.foldable.isNotEmpty
 import arrow.core.identity
-import com.google.gson.JsonObject
 import io.prometheus.client.Counter
 import io.prometheus.client.spring.web.PrometheusTimeMethod
 import org.springframework.beans.factory.annotation.Qualifier
@@ -87,7 +86,7 @@ class RdsTarget(private val dataSource: DataSource,
                         val startDate = transformedObject.nullableInteger("assessmentPeriod", "startDate")
                         val endDate = transformedObject.nullableInteger("assessmentPeriod", "endDate")
                         val people = transformedObject.nullableList<Map<String, String>>("people")
-                        val person1 = people?.firstOrNull();
+                        val person1 = people?.firstOrNull()
                         val person1CitizenId = person1?.get("citizenId")
                         val person1ContractId = person1?.get("contractId")
 

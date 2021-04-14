@@ -1,5 +1,6 @@
 package ucfs.claimant.consumer.configuration
 
+import org.apache.commons.lang3.StringUtils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -17,7 +18,9 @@ class AwsConfiguration(private val kmsRegion: String) {
     @Bean
     fun kmsClient(): KmsClient =
         with (KmsClient.builder()) {
-            region(Region.of(kmsRegion))
+            if (kmsRegion.isNotBlank()) {
+                region(Region.of(kmsRegion))
+            }
             build()
         }
 

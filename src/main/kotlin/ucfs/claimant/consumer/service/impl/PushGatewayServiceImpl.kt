@@ -2,16 +2,12 @@ package ucfs.claimant.consumer.service.impl
 
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.PushGateway
-import kotlinx.coroutines.delay
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor
 import org.springframework.scheduling.config.ScheduledTask
 import org.springframework.stereotype.Service
 import ucfs.claimant.consumer.service.PushGatewayService
 import uk.gov.dwp.dataworks.logging.DataworksLogger
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Service
 class PushGatewayServiceImpl(private val pushGateway: PushGateway,

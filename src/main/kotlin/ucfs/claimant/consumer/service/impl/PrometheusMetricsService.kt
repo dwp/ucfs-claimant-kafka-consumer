@@ -1,10 +1,7 @@
 package ucfs.claimant.consumer.service.impl
 
 import io.prometheus.client.exporter.HTTPServer
-import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.springframework.stereotype.Service
-import sun.misc.Signal
-import ucfs.claimant.consumer.orchestrate.impl.OrchestratorImpl
 import ucfs.claimant.consumer.service.MetricsService
 import uk.gov.dwp.dataworks.logging.DataworksLogger
 

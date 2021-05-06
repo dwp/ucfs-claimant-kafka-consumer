@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.kms.KmsClient
 import software.amazon.awssdk.services.kms.model.GenerateDataKeyRequest
 import ucfs.claimant.consumer.domain.EncryptedDataKeyServiceData
 import ucfs.claimant.consumer.repository.EncryptingDataKeyRepository
+import ucfs.claimant.consumer.utility.CipherExtensions.encoded
 import java.util.*
 
 @Repository
@@ -25,7 +26,7 @@ class KmsEncryptingDataKeyRepository(private val kmsClient: KmsClient,
     override fun encryptedDataKey(): EncryptedDataKeyServiceData =
         try {
             with (kmsClient.generateDataKey(generateDataKeyRequest())) {
-                Base64.getEncoder().encodeToString(ciphertextBlob().asByteArray()).let {
+                ciphertextBlob().asByteArray().encoded().let {
                     EncryptedDataKeyServiceData(keyId(), plaintext().asByteArray(), it)
                 }
             }

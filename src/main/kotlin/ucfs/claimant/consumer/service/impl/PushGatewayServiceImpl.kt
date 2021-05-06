@@ -18,9 +18,9 @@ class PushGatewayServiceImpl(private val pushGateway: PushGateway,
 
     @Scheduled(fixedRateString = "\${metrics.pushRate:20000}", initialDelayString = "\${metrics.initialDelay:10000}")
     override fun pushMetrics() {
-        logger.info("Pushing metrics", *metricsGroupingKeyPairs())
+        logger.debug("Pushing metrics", *metricsGroupingKeyPairs())
         pushGateway.push(CollectorRegistry.defaultRegistry, "ucfs-claimant-kafka-consumer", metricsGroupingKey())
-        logger.info("Pushed metrics", *metricsGroupingKeyPairs())
+        logger.debug("Pushed metrics", *metricsGroupingKeyPairs())
     }
 
     override fun pushFinalMetrics() {

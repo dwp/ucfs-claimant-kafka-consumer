@@ -107,7 +107,6 @@ def step_impl(context, expected, record_type, table):
         count_cursor = connection.cursor()
         count_cursor.execute(f"SELECT count(*) FROM {table}")
         actual = count_cursor.fetchone()[0]
-
         assert expected == actual
         count_cursor.close()
 
@@ -132,13 +131,13 @@ def step_impl(context, table):
                 encryption_object = obj['encryptedTakeHomePay']
                 encrypted_take_home_pay = encryption_object['takeHomePay']
                 encrypted_key = encryption_object['cipherTextBlob']
-                cipher = base64.b64decode(encrypted_key)
+                cipher = base64.urlsafe_b64decode(encrypted_key)
                 decrypted_key_response = kms_client.decrypt(CiphertextBlob=cipher)
                 plaintext_key = decrypted_key_response['Plaintext']
                 iv = encrypted_take_home_pay[:16]
                 encrypted = encrypted_take_home_pay[16:]
-                aes = AES.new(plaintext_key, AES.MODE_GCM, nonce=base64.b64decode(iv))
-                raw = base64.b64decode(encrypted)
+                aes = AES.new(plaintext_key, AES.MODE_GCM, nonce=base64.urlsafe_b64decode(iv))
+                raw = base64.urlsafe_b64decode(encrypted)
                 decrypted = aes.decrypt_and_verify(raw[:-16], raw[-16:])
                 assert decrypted == b"1234.56"
             elif 'nino' in obj:

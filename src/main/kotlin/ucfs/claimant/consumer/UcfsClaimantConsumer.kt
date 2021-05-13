@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer
 
 import io.prometheus.client.spring.web.EnablePrometheusTiming
+import io.prometheus.client.Gauge
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

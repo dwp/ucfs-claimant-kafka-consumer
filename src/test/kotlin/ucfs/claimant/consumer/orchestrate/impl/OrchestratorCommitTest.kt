@@ -99,7 +99,7 @@ class OrchestratorCommitTest: StringSpec() {
                 firstValue shouldBe ToleranceMatcher(100.toDouble(), 0.5)
             }
 
-            verify(childRunningApps, times(1)).inc()
+            verify(childRunningApps, times(0)).inc()
         }
     }
 

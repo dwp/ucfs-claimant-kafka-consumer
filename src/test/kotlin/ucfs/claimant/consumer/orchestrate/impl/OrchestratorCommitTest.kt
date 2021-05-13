@@ -72,16 +72,11 @@ class OrchestratorCommitTest: StringSpec() {
                 } doReturn Pair(queueRecord, transformationResult()).right()
             }
 
-            val childRunningApps = mock<Gauge.Child>()
-            val runningApplicationsGauge = mock<Gauge> {
-                on { labels(any()) } doReturn childRunningApps
-            }
-
             val childLag = mock<Gauge.Child>()
             val lagGauge = mock<Gauge> {
                 on { labels(any()) } doReturn childLag
             }
-            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget, lagGauge, runningApplicationsGauge)
+            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget, lagGauge)
 
             shouldThrow<RuntimeException> { orchestrator.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
@@ -98,8 +93,6 @@ class OrchestratorCommitTest: StringSpec() {
                 verify(childLag, times(2)).set(capture())
                 firstValue shouldBe ToleranceMatcher(100.toDouble(), 0.5)
             }
-
-            verify(childRunningApps, times(0)).inc()
         }
     }
 
@@ -115,10 +108,9 @@ class OrchestratorCommitTest: StringSpec() {
                              processor: CompoundProcessor,
                              successTarget: SuccessTarget,
                              failureTarget: FailureTarget, 
-                             lagGauge: Gauge,
-                             runningApplicationsGauge: Gauge): OrchestratorImpl =
+                             lagGauge: Gauge): OrchestratorImpl =
         OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
-            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), lagGauge, runningApplicationsGauge)
+            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), lagGauge)
 
 
     private fun preProcessor(): PreProcessor {

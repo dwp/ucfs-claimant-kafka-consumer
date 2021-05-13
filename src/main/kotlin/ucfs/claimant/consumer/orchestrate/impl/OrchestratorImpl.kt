@@ -40,8 +40,7 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
                        private val failureTarget: FailureTarget,
                        private val metricsService: MetricsService,
                        private val pushGatewayService: PushGatewayService,
-                       private val lagGauge: Gauge,
-                       private val runningApplicationsGauge: Gauge) : Orchestrator {
+                       private val lagGauge: Gauge) : Orchestrator {
 
     @ExperimentalTime
     override fun orchestrate() = runBlocking {
@@ -59,7 +58,6 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
     private suspend fun KafkaConsumer<ByteArray, ByteArray>.processLoop() {
         while (!closed.get()) {
             coroutineScope {
-                runningApplicationsGauge.inc()
                 subscribe(this@processLoop, topicRegex)
                 poll(pollDuration).let { records ->
                     logger.info("Fetched records", "size" to "${records.count()}")
@@ -156,7 +154,6 @@ class OrchestratorImpl(private val consumerProvider: () -> KafkaConsumer<ByteArr
     private fun <K, V> handleSignal(consumer: KafkaConsumer<K, V>, signalName: String): SignalHandler? {
         return Signal.handle(Signal(signalName)) {
             logger.info("Signal received, cancelling job.", "signal" to "$it")
-            runningApplicationsGauge.dec()
             closed.set(true)
             metricsService.stopMetricsEndpoint()
             consumer.wakeup()

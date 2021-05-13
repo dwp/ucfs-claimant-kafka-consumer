@@ -176,7 +176,7 @@ class OrchestratorTargetTest : StringSpec() {
                             successTarget: SuccessTarget,
                             failureTarget: FailureTarget): OrchestratorImpl {
         return OrchestratorImpl(provider, Regex(TOPIC), preProcessor, processor,
-            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), mock(), mock())
+            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), mock())
     }
 
     private fun consumerRecords(first: Int, last: Int): ConsumerRecords<ByteArray, ByteArray> =

@@ -1,6 +1,7 @@
 package ucfs.claimant.consumer
 
 import io.prometheus.client.spring.web.EnablePrometheusTiming
+import io.prometheus.client.Gauge
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -21,14 +22,24 @@ import kotlin.time.ExperimentalTime
 class UcfsClaimantConsumer(
     private val orchestrator: Orchestrator,
     private val metricsService: MetricsService,
+    private val runningApplicationsGauge: Gauge,
 ) : CommandLineRunner {
 
     @ExperimentalTime
     override fun run(vararg args: String?) {
+        val log = DataworksLogger.getLogger("run")
         metricsService.startMetricsEndpoint()
-        orchestrator.orchestrate()
-    }
 
+        log.info("Incrementing running applications metric count")
+        runningApplicationsGauge.inc()
+
+        try {
+            orchestrator.orchestrate()
+        } finally {
+            log.info("Decrementing running applications metric count")
+            runningApplicationsGauge.dec()
+        }
+    }
 }
 
 fun main(args: Array<String>) {

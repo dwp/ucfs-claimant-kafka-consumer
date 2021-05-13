@@ -72,10 +72,9 @@ class OrchestratorCommitTest: StringSpec() {
                 } doReturn Pair(queueRecord, transformationResult()).right()
             }
 
-            val child = mock<Gauge.Child>()
-
+            val childLag = mock<Gauge.Child>()
             val lagGauge = mock<Gauge> {
-                on { labels(any()) } doReturn child
+                on { labels(any()) } doReturn childLag
             }
             val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget, lagGauge)
 
@@ -91,7 +90,7 @@ class OrchestratorCommitTest: StringSpec() {
             verifyNoMoreInteractions(consumer)
 
             argumentCaptor<Double> {
-                verify(child, times(2)).set(capture())
+                verify(childLag, times(2)).set(capture())
                 firstValue shouldBe ToleranceMatcher(100.toDouble(), 0.5)
             }
         }
@@ -108,7 +107,8 @@ class OrchestratorCommitTest: StringSpec() {
                              preProcessor: PreProcessor,
                              processor: CompoundProcessor,
                              successTarget: SuccessTarget,
-                             failureTarget: FailureTarget, lagGauge: Gauge): OrchestratorImpl =
+                             failureTarget: FailureTarget, 
+                             lagGauge: Gauge): OrchestratorImpl =
         OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
             10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), lagGauge)
 

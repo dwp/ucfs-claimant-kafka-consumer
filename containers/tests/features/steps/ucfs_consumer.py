@@ -174,6 +174,7 @@ def step_impl(context):
                 'uckc_inserted_records_total',
                 'uckc_kms_failures_created',
                 'uckc_kms_failures_total',
+                "uckc_running_applications",
                 'uckc_kms_retries_created',
                 'uckc_kms_retries_total',
                 'uckc_salt',

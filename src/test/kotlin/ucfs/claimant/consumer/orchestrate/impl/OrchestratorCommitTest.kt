@@ -74,7 +74,7 @@ class OrchestratorCommitTest: StringSpec() {
 
             val childRunningApps = mock<Gauge.Child>()
             val runningApplicationsGauge = mock<Gauge> {
-                on { labels(any()) } doReturn runningApplicationsGauge
+                on { labels(any()) } doReturn childRunningApps
             }
 
             val childLag = mock<Gauge.Child>()
@@ -99,7 +99,7 @@ class OrchestratorCommitTest: StringSpec() {
                 firstValue shouldBe ToleranceMatcher(100.toDouble(), 0.5)
             }
 
-            verify(runningApplicationsGauge, times(1)).inc()
+            verify(childRunningApps, times(1)).inc()
         }
     }
 

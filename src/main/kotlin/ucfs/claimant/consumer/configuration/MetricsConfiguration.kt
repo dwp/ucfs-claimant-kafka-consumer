@@ -58,6 +58,10 @@ class MetricsConfiguration(private val pushgatewayHost: String, private val push
     fun lagGauge() = gauge("uckc_topic_partition_lags",
         "The processing lag on each topic/partition", "topic", "partition")
 
+    @Bean
+    fun runningApplicationsGauge() = gauge("uckc_running_applications",
+        "How many instances are running")
+
 
     private fun gauge(name: String, help: String, vararg labels: String): Gauge =
         with(Gauge.build()) {

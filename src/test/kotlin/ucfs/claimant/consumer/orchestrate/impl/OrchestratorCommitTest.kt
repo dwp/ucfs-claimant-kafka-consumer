@@ -72,12 +72,16 @@ class OrchestratorCommitTest: StringSpec() {
                 } doReturn Pair(queueRecord, transformationResult()).right()
             }
 
-            val child = mock<Gauge.Child>()
-
-            val lagGauge = mock<Gauge> {
-                on { labels(any()) } doReturn child
+            val childRunningApps = mock<Gauge.Child>()
+            val runningApplicationsGauge = mock<Gauge> {
+                on { labels(any()) } doReturn runningApplicationsGauge
             }
-            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget, lagGauge)
+
+            val childLag = mock<Gauge.Child>()
+            val lagGauge = mock<Gauge> {
+                on { labels(any()) } doReturn childLag
+            }
+            val orchestrator = orchestrator(provider, preProcessor, processor, successTarget, failureTarget, lagGauge, runningApplicationsGauge)
 
             shouldThrow<RuntimeException> { orchestrator.orchestrate() }
             verify(consumer, times(3)).poll(10.seconds.toJavaDuration())
@@ -91,9 +95,11 @@ class OrchestratorCommitTest: StringSpec() {
             verifyNoMoreInteractions(consumer)
 
             argumentCaptor<Double> {
-                verify(child, times(2)).set(capture())
+                verify(childLag, times(2)).set(capture())
                 firstValue shouldBe ToleranceMatcher(100.toDouble(), 0.5)
             }
+
+            verify(runningApplicationsGauge, times(1)).inc()
         }
     }
 
@@ -108,9 +114,11 @@ class OrchestratorCommitTest: StringSpec() {
                              preProcessor: PreProcessor,
                              processor: CompoundProcessor,
                              successTarget: SuccessTarget,
-                             failureTarget: FailureTarget, lagGauge: Gauge): OrchestratorImpl =
+                             failureTarget: FailureTarget, 
+                             lagGauge: Gauge,
+                             runningApplicationsGauge: Gauge): OrchestratorImpl =
         OrchestratorImpl(provider, Regex(topic), preProcessor, processor,
-            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), lagGauge)
+            10.seconds.toJavaDuration(), successTarget, failureTarget, mock(), mock(), lagGauge, runningApplicationsGauge)
 
 
     private fun preProcessor(): PreProcessor {

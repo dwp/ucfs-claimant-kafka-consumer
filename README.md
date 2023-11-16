@@ -1,3 +1,5 @@
+# DO NOT USE THIS REPO - MIGRATED TO GITLAB
+
 # UCFS Claimant Kafka Consumer
 
 Subscribes to the configured topics, decrypts them, logs them to the console
